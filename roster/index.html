@@ -57,6 +57,7 @@ table.rt td.rlabel{min-width:46px;width:46px;text-align:center;font-weight:700;b
 table.rt td.drop.over{outline:2px solid var(--pri);outline-offset:-2px}
 table.rt tr.t격수 td.drop{background:rgba(120,150,230,.16)}
 table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
+table.rt tr.t주술사 td.drop{background:rgba(170,120,220,.14)}
 .cell{padding:4px 7px;cursor:grab;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .cell.gwanmun{color:var(--pri);font-weight:800}
 .cell.picked{outline:3px solid var(--pri);outline-offset:-3px;border-radius:4px}
@@ -69,8 +70,22 @@ table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
 .person.gwanmun{background:var(--pri);color:#fff;font-weight:700}
 .person.picked{outline:3px solid var(--pri);outline-offset:1px}
 .person .detail{opacity:.65;font-size:11px}
-.pool{border:2px dashed var(--sub);border-radius:12px;padding:10px;margin-bottom:12px}
-.pool-title{font-weight:700;font-size:13px;margin-bottom:6px;color:var(--sub)}
+.pool{border:2px dashed var(--sub);border-radius:12px;padding:12px;margin-bottom:12px}
+.pool-title{font-weight:700;font-size:14px;margin-bottom:8px;color:var(--sub)}
+#poolSlots{gap:8px;min-height:56px;padding:8px}
+#poolSlots .person{font-size:15px;padding:10px 14px;border-radius:10px;gap:6px}
+#poolSlots .person .detail{font-size:12px}
+/* 대기 칸은 직업이 섞이니 색으로 구분해요 */
+.person.jG{background:#cfe0fb}
+.person.jD{background:#cdeedd}
+.person.jJ{background:#e4d3f7}
+.person.jX{background:var(--chip)}
+@media(prefers-color-scheme:dark){
+  .person.jG{background:#27406e}
+  .person.jD{background:#1f4a36}
+  .person.jJ{background:#3d2c5c}
+}
+.person.gwanmun{background:var(--pri)!important;color:#fff;font-weight:700}
 #rosterTbl .it,#leaderTbl .it{display:grid;grid-template-columns:1fr 90px 1fr 56px 34px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 #leaderTbl .it{grid-template-columns:1fr 90px 34px}
 .drvrow{display:grid;grid-template-columns:1fr 1fr 60px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -135,6 +150,7 @@ table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
         <button class="sm ghost" onclick="addGroup()">+ 룹 추가</button>
         <button class="sm ghost" onclick="addRow('격수')">+ 격수 줄</button>
         <button class="sm ghost" onclick="addRow('도사')">+ 도사 줄</button>
+        <button class="sm ghost" onclick="addRow('주술사')">+ 주술사 줄</button>
         <button class="sm ghost" onclick="setCols()">칸 수 바꾸기</button>
         <span class="sub grow" id="colInfo"></span>
       </div>
@@ -519,18 +535,23 @@ function autoArrange() {
   openers = parsed.filter(p => p.kind === "오픈").map(p => ({ name: p.name, group: p.group, detail: p.detail, driver: "", merc: !!p.merc }));
   const mk = p => ({ name: p.name, group: p.group, detail: p.detail, gwanmun: p.gwanmun, driver: "",
                      opened: p.kind === "오픈", merc: !!p.merc, by: p.by || "" });
-  const gs = [], ds = [];
+  const gs = [], ds = [], js = [];
   parsed.forEach(p => {
     const m = mk(p);
     if (isGyeoksu(p.group)) gs.push(m);
     else if (p.group === "도사") ds.push(m);
+    else if (p.group === "주술사") js.push(m);
     else poolMembers.push(m);
   });
   gs.sort((a, b) => (b.gwanmun ? 1 : 0) - (a.gwanmun ? 1 : 0));   // 공문 먼저 → 룹마다 흩어짐
   for (let i = 0; i < n; i++) groups.push(newGroup((i + 1) + "룹"));
   const split = (arr) => { const out = Array.from({ length: n }, () => []); arr.forEach((p, i) => out[i % n].push(p)); return out; };
-  const gg = split(gs), dd = split(ds);
-  groups.forEach((g, i) => { fillInto(g, "격수", gg[i]); fillInto(g, "도사", dd[i]); });
+  const gg = split(gs), dd = split(ds), jj = split(js);
+  groups.forEach((g, i) => {
+    fillInto(g, "격수", gg[i]);
+    fillInto(g, "도사", dd[i]);
+    if (jj[i].length) fillInto(g, "주술사", jj[i]);   // 주술사가 있을 때만 줄을 만들어요
+  });
   renderBoard(); renderDrv();
   toast(`${n}개 룹으로 배치했어요 — 칸을 눌러 옮길 수 있어요`);
 }
@@ -579,6 +600,8 @@ function renderDrv() {
       <label class="sub" style="display:flex;align-items:center;gap:4px"><input type="checkbox" ${o.merc ? "checked" : ""} onchange="openers[${i}].merc=this.checked" style="width:18px"> 용병</label>
     </div>`).join("");
 }
+// 대기 칸 색깔용: 전사/도적=격수, 도사, 주술사, 나머지
+function jobClass(g) { return isGyeoksu(g) ? "G" : g === "도사" ? "D" : g === "주술사" ? "J" : "X"; }
 function allPeople() { return groups.flatMap(g => g.rows.flatMap(r => r.people.filter(Boolean))).concat(poolMembers); }
 function setDriver(i, v) {
   openers[i].driver = v;
@@ -599,7 +622,7 @@ function renderBoard() {
   poolMembers = poolMembers.filter((p, i, a) => p && a.findIndex(x => x.name === p.name) === i);
   $("#pool").classList.toggle("hide", groups.length === 0 && poolMembers.length === 0);
   $("#poolSlots").innerHTML = poolMembers.length
-    ? poolMembers.map((p, i) => `<div class="person ${p.gwanmun ? "gwanmun" : ""} ${picked && picked.g === "pool" && picked.c === i ? "picked" : ""}" draggable="true" data-i="${i}">${esc(p.name)}<span class="detail">${esc(p.detail || "")}</span></div>`).join("")
+    ? poolMembers.map((p, i) => `<div class="person j${esc(jobClass(p.group))} ${p.gwanmun ? "gwanmun" : ""} ${picked && picked.g === "pool" && picked.c === i ? "picked" : ""}" draggable="true" data-i="${i}"><b>${esc(p.name)}</b><span class="detail">${esc(p.detail || "")}</span>${p.merc ? `<span class="drv">용병</span>` : ""}</div>`).join("")
     : `<span class="sub">비어 있음 — 표에서 뺄 사람을 여기로 옮기면 돼요</span>`;
 
   if (!groups.length) {
