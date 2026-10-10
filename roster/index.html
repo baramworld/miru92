@@ -1019,7 +1019,7 @@ function boardGrid() {
     g.push(["오픈", "운전자", ...openers.map(o => `${o.name} → ${o.driver || "(미정)"}${o.merc ? " [용병]" : ""}`)]);
   }
   if (mercPool.length) {
-    g.push(["용병", "운전대기", ...mercPool.map(m => m.name + (m.by ? `(${m.by})` : ""))]);
+    g.push(["용병", "부른사람/담당", ...mercPool.map(m => m.name + (m.by ? `(${m.by})` : ""))]);
   }
   // 오른쪽 빈 칸 잘라내기
   let w = 0; g.forEach(r => { for (let i = r.length - 1; i >= 0; i--) if (String(r[i]).trim()) { w = Math.max(w, i + 1); break; } });
@@ -1031,7 +1031,7 @@ function boardStyle() {
   const extra = [];
   if (poolMembers.length) extra.push(["대기", "", ...poolMembers.map(show)]);
   if (openers.length) extra.push(["오픈", "운전자", ...openers.map(o => `${o.name} → ${o.driver || "(미정)"}${o.merc ? " [용병]" : ""}`)]);
-  if (mercPool.length) extra.push(["용병", "운전대기", ...mercPool.map(m => m.name + (m.by ? `(${m.by})` : ""))]);
+  if (mercPool.length) extra.push(["용병", "부른사람/담당", ...mercPool.map(m => m.name + (m.by ? `(${m.by})` : ""))]);
   return {
     cols: NC,
     groups: groups.map((g, i) => ({
