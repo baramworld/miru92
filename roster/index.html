@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>공성 룹표</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--tx:#1b1d21;--sub:#6b7280;--line:#e3e5e9;--pri:#d63c3c;--pri-t:#fff;--ok:#1f9d55;--warn:#c47a00;--chip:#eceef2;--g1:#3b6fd6;--g2:#2e9e6b}
+@media(prefers-color-scheme:dark){:root{--bg:#14161a;--card:#1d2026;--tx:#eceef2;--sub:#9aa1ad;--line:#2b2f37;--chip:#2a2e36;--ok:#3ecf80;--warn:#f0b04a;--g1:#5b8ff0;--g2:#4cc090}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px}
+body{padding:env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom))}
+main{max-width:980px;margin:0 auto;padding:12px}
+h2{font-size:13px;color:var(--sub);margin:16px 4px 8px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.sub{color:var(--sub);font-size:13px}
+.row{display:flex;gap:8px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx);font-size:15px;font-family:inherit}
+textarea{resize:vertical;min-height:90px}
+button{font-family:inherit;font-size:14px;border:0;border-radius:10px;padding:10px 14px;background:var(--chip);color:var(--tx);cursor:pointer}
+button.pri{background:var(--pri);color:var(--pri-t);font-weight:700}
+button.big-btn{width:100%;padding:14px;font-size:16px}
+button.sm{padding:6px 10px;font-size:13px}
+button.on{background:var(--pri);color:var(--pri-t)}
+button.ghost{background:transparent;border:1px solid var(--line)}
+.chip{padding:8px 12px;border-radius:999px;background:var(--chip);font-size:14px}
+.chip.on{background:var(--pri);color:var(--pri-t)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border-radius:0;background:transparent;padding:14px 0;color:var(--sub);font-weight:600}
+nav button[aria-current=true]{color:var(--pri)}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:9}
+#toast.show{opacity:1}#toast.err{background:#b3261e}
+.hide{display:none!important}
+#busy{position:fixed;inset:0;background:rgba(0,0,0,.15);z-index:8;display:flex;align-items:center;justify-content:center}
+#busy>div{background:var(--card);border:1px solid var(--line);padding:12px 22px;border-radius:12px;font-weight:700}
+
+/* board */
+.zone-h{font-weight:800;font-size:16px;margin:14px 4px 8px;display:flex;align-items:center;gap:8px}
+.zone-h.g{color:var(--g1)}.zone-h.d{color:var(--g2)}
+.leader-row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.leader-name{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.slots{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;border:1px dashed var(--line);border-radius:8px;padding:6px}
+.slots.over{background:var(--chip)}
+.person{background:var(--chip);border-radius:8px;padding:6px 10px;font-size:13px;cursor:grab;display:flex;align-items:center;gap:4px;user-select:none}
+.person.g1{background:#dfe9fc}.person.g2{background:#dcf3e8}
+@media(prefers-color-scheme:dark){.person.g1{background:#223257}.person.g2{background:#1d3a2c}}
+.person.gwanmun{background:var(--pri);color:#fff;font-weight:700}
+.person.picked{outline:3px solid var(--pri);outline-offset:1px}
+.person .detail{opacity:.65;font-size:11px}
+.pool{border:2px dashed var(--sub);border-radius:12px;padding:10px;margin-bottom:12px}
+.pool-title{font-weight:700;font-size:13px;margin-bottom:6px;color:var(--sub)}
+.bad{color:var(--pri)}
+.rtab{display:flex;gap:6px;margin-bottom:10px}
+.rtab button{flex:1}
+#rosterTbl .it,#leaderTbl .it{display:grid;grid-template-columns:1fr 90px 1fr 60px 32px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+#leaderTbl .it{grid-template-columns:1fr 90px 32px}
+#board{min-height:40px}
+</style>
+</head>
+<body>
+<main>
+  <section id="setup" class="hide">
+    <div class="card">
+      <h2 style="margin-top:0">처음 한 번만 연결해요</h2>
+      <input id="apiIn" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="pri big-btn" style="margin-top:10px" onclick="saveApi()">연결</button>
+    </div>
+  </section>
+
+  <!-- 배치 -->
+  <section id="s-board" class="hide">
+    <div class="card">
+      <div class="rtab">
+        <button id="tText" class="on" onclick="setRTab('text')">텍스트 붙여넣기</button>
+        <button id="tImg" onclick="setRTab('img')">스크린샷 업로드</button>
+      </div>
+      <div id="rText">
+        <textarea id="pasteBox" placeholder="예시&#10;살/격수(귀검)&#10;구탑/격수&#10;화무결/도사(진인)&#10;퉁/도사"></textarea>
+      </div>
+      <div id="rImg" class="hide">
+        <input id="imgIn" type="file" accept="image/*">
+        <div class="sub" id="ocrStatus" style="margin-top:6px"></div>
+        <div class="sub" style="margin-top:4px">인식 결과는 아래 칸에 텍스트로 뜨니, 틀린 줄만 고치고 넘어가면 돼요.</div>
+        <textarea id="ocrBox" style="margin-top:8px" placeholder="이미지를 올리면 여기에 인식된 텍스트가 떠요"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="grow" onclick="parsePaste()">목록 인식</button>
+        <button class="pri grow" onclick="autoArrange()">자동 배치</button>
+      </div>
+      <div class="sub" id="parsedInfo" style="margin-top:8px"></div>
+      <button class="sm ghost hide" id="addToRoster" style="margin-top:8px" onclick="pushNewToRoster()">명단에 없는 사람 명단 탭으로 보내기</button>
+    </div>
+
+    <div id="pool" class="pool hide">
+      <div class="pool-title">대기 (자리 없음 — 드래그해서 넣어주세요)</div>
+      <div class="slots" id="poolSlots" data-row="pool"></div>
+    </div>
+
+    <div id="pickHint" class="card hide" style="padding:10px 14px;border-color:var(--pri)">
+      <b>한 명 골랐어요</b> <span class="sub">— 옮길 룹의 빈 칸을 눌러주세요. 다시 누르면 취소돼요.</span>
+    </div>
+
+    <div id="board"></div>
+
+    <div class="card">
+      <input id="expTitle" placeholder="룹표 제목 (예: 금요일 수성 [백호 장훈])">
+      <div class="row wrap" style="margin-top:10px">
+        <button class="pri grow" onclick="saveBoard()">저장</button>
+        <button class="grow" onclick="exportPng()">이미지로 추출</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 명단 -->
+  <section id="s-roster" class="hide">
+    <div class="card">
+      <h2 style="margin-top:0">캐릭터 명단</h2>
+      <div id="rosterTbl"></div>
+      <div class="row" style="margin-top:10px">
+        <button onclick="addRosterRow()">+ 추가</button>
+        <button class="pri grow" onclick="saveRoster()">명단 저장</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 룹장 -->
+  <section id="s-leader" class="hide">
+    <div class="card">
+      <h2 style="margin-top:0">룹장 목록 (반고정)</h2>
+      <p class="sub" style="margin-top:0">격수 구역 룹장을 위에, 도사 구역 룹장을 아래에 두면 룹표 순서도 그렇게 나와요.</p>
+      <div id="leaderTbl"></div>
+      <div class="row" style="margin-top:10px">
+        <button onclick="addLeaderRow()">+ 추가</button>
+        <button class="pri grow" onclick="saveLeaders()">룹장 저장</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav id="nav" class="hide">
+  <button data-t="s-board" aria-current="true">배치</button>
+  <button data-t="s-roster">명단</button>
+  <button data-t="s-leader">룹장</button>
+</nav>
+<div id="toast"></div>
+<div id="busy" class="hide"><div>저장 중…</div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DEFAULT_API = "";
+let API = localStorage.getItem("api") || DEFAULT_API;
+let D = { roster: [], leaders: [], board: null, groups: ["격수","도사","도적","주술사"] };
+let tab = "s-board", rtab = "text";
+let parsed = [];     // [{name, group, detail, gwanmun}]
+let boardRows = [];  // [{leader, zone, members:[...]}]
+let poolMembers = [];
+let RE = [], LE = [];
+
+function toast(m, err) { const t = $("#toast"); t.textContent = m; t.className = "show" + (err ? " err" : ""); clearTimeout(toast.h); toast.h = setTimeout(() => t.className = "", 2200); }
+
+function saveApi() {
+  const v = $("#apiIn").value.trim();
+  if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(v)) return toast("URL 형식을 확인해 주세요", 1);
+  localStorage.setItem("api", v); API = v; boot();
+}
+async function load() {
+  try { const r = await fetch(API).then(r => r.json()); if (r.ok) { D = r.data; onData(); } } catch (e) { toast("불러오기 실패", 1); }
+}
+async function write(action, payload) {
+  let pw = localStorage.getItem("pw") || prompt("비밀번호");
+  if (!pw) return null;
+  $("#busy").classList.remove("hide");
+  try {
+    const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, pw, ...payload }) }).then(r => r.json());
+    if (!r.ok) { if (r.error === "pw") { localStorage.removeItem("pw"); toast("비밀번호가 달라요", 1); } else toast(r.error || "실패", 1); return null; }
+    localStorage.setItem("pw", pw); D = r.data; onData(); return r;
+  } catch (e) { toast("저장 실패 (네트워크)", 1); return null; } finally { $("#busy").classList.add("hide"); }
+}
+function boot() {
+  const has = !!API;
+  $("#setup").classList.toggle("hide", has);
+  $("#nav").classList.toggle("hide", !has);
+  if (!has) { document.querySelectorAll("main > section:not(#setup)").forEach(s => s.classList.add("hide")); return; }
+  go(tab); load();
+}
+function go(t) {
+  tab = t;
+  ["s-board", "s-roster", "s-leader"].forEach(id => $("#" + id).classList.toggle("hide", id !== t));
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-current", b.dataset.t === t));
+  if (t === "s-roster") drawRosterTbl();
+  if (t === "s-leader") drawLeaderTbl();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => go(b.dataset.t));
+
+function onData() {
+  if (D.board && D.board.rows && !boardRows.length) { boardRows = D.board.rows.map(r => ({ ...r, members: r.members.map(m => ({ ...m })) })); renderBoard(); }
+  if (tab === "s-roster") drawRosterTbl();
+  if (tab === "s-leader") drawLeaderTbl();
+}
+
+/* ---------- 직업 분류 ---------- */
+// 격수 = 전사 계열 + 도적 계열, 도사 = 도사 계열, 주술사 = 주술사 계열
+const JOB_RE = [
+  ["격수", /(전사|검객|검제|검황|도적|자객|진검|귀검)/],
+  ["도사", /(도사|도인|명인|진인)/],
+  ["주술사", /(주술사|술사|현사|현인)/]
+];
+function classify(jobText) {
+  const t = String(jobText || "");
+  for (const [g, re] of JOB_RE) if (re.test(t)) return g;
+  return "";
+}
+function findRoster(name) { return D.roster.find(p => p.name === name); }
+
+/* ---------- 붙여넣기/OCR 파싱 ---------- */
+function setRTab(t) {
+  rtab = t;
+  $("#tText").classList.toggle("on", t === "text");
+  $("#tImg").classList.toggle("on", t === "img");
+  $("#rText").classList.toggle("hide", t !== "text");
+  $("#rImg").classList.toggle("hide", t !== "img");
+}
+function parseLine(line) {
+  // 투표 목록은 "이름/직업", "이름 직업", "이름\직업", "이름 / 직업", "이름/직업/길드" 등 형태가 제각각이라 넓게 받아요.
+  let s = String(line || "").replace(/[\\｜|·]/g, "/").replace(/\s*\/\s*/g, "/").replace(/\s+/g, " ").trim();
+  s = s.replace(/^[-*•\d.)\s]+/, "").replace(/^[0-9]+명?\s*/, "");
+  if (!s) return null;
+  let segs = s.split("/").map(x => x.trim()).filter(Boolean);
+  if (segs.length === 1 && segs[0].includes(" ")) {
+    const parts = segs[0].split(" ");
+    segs = [parts.slice(0, -1).join(" "), parts[parts.length - 1]];
+  }
+  if (!segs.length) return null;
+  const name = segs[0].replace(/^[^\S]*/, "").trim();
+  if (!name) return null;
+  let detail = "", group = "";
+  for (let i = segs.length - 1; i >= 1; i--) {
+    const g = classify(segs[i]);
+    if (g) { group = g; detail = segs[i].replace(/[()]/g, "").trim(); break; }
+  }
+  if (!group) { const g = classify(segs.slice(1).join(" ")); if (g) { group = g; detail = segs.slice(1).join(" "); } }
+  const existing = findRoster(name);
+  if (existing) return { name, group: existing.group || group, detail: existing.detail || detail, gwanmun: !!existing.gwanmun };
+  return { name, group, detail, gwanmun: false };
+}
+function parsePaste() {
+  const raw = (rtab === "text" ? $("#pasteBox").value : $("#ocrBox").value);
+  const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
+  const out = [], bad = [];
+  lines.forEach(l => {
+    const p = parseLine(l);
+    if (!p) { bad.push(l); return; }
+    out.push(p);                 // 직업을 못 알아봐도 대기 칸으로 보내서 직접 끌어넣을 수 있게 해요
+    if (!p.group) bad.push(p.name);
+  });
+  const seen = {}; parsed = out.filter(p => (seen[p.name] ? false : (seen[p.name] = true)));
+  const okCnt = parsed.filter(p => p.group).length;
+  $("#parsedInfo").innerHTML = `인식 ${parsed.length}명 (직업 확인 ${okCnt}명)` +
+    (bad.length ? `<br><span class="bad">직업을 못 알아본 ${bad.length}명은 대기 칸으로 가요: ${bad.slice(0, 10).map(esc).join(", ")}${bad.length > 10 ? " 외" : ""}</span>` : "");
+  const news = parsed.filter(p => !findRoster(p.name));
+  $("#addToRoster").classList.toggle("hide", news.length === 0);
+  if (news.length) $("#addToRoster").textContent = `명단에 없는 ${news.length}명 명단 탭으로 보내기`;
+  if (!parsed.length) return toast("인식된 인원이 없어요", 1);
+  toast("인식 완료 — 자동 배치를 눌러주세요");
+}
+
+async function onImgChange(e) {
+  const f = e.target.files[0]; if (!f) return;
+  $("#ocrStatus").textContent = "텍스트를 읽는 중...";
+  try {
+    if (!window.Tesseract) await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
+    const { data } = await Tesseract.recognize(f, "kor+eng", { logger: () => {} });
+    $("#ocrBox").value = data.text.trim();
+    $("#ocrStatus").textContent = "인식 완료 — 틀린 부분을 고친 뒤 '목록 인식'을 눌러주세요.";
+  } catch (err) {
+    $("#ocrStatus").textContent = "인식 실패 — 직접 타이핑해 주세요.";
+  }
+}
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+
+/* ---------- 자동 배치 ---------- */
+function autoArrange() {
+  if (!parsed.length) return toast("먼저 목록 인식을 해 주세요", 1);
+  if (!D.leaders.length) return toast("룹장 목록을 먼저 등록해 주세요 (룹장 탭)", 1);
+  const byZone = { 격수: [], 도사: [] };
+  poolMembers = [];
+  parsed.forEach(p => { if (p.group === "격수") byZone["격수"].push(p); else if (p.group === "도사") byZone["도사"].push(p); else poolMembers.push(p); });
+  const leadersByZone = { 격수: D.leaders.filter(l => l.zone === "격수"), 도사: D.leaders.filter(l => l.zone === "도사") };
+  boardRows = [];
+  ["격수", "도사"].forEach(zone => {
+    leadersByZone[zone].forEach(l => boardRows.push({ leader: l.name, zone, members: [] }));
+    const rows = boardRows.filter(r => r.zone === zone);
+    if (!rows.length) { poolMembers = poolMembers.concat(byZone[zone]); return; }
+    // 룹장 본인은 자기 룹 맨 앞에 두고, 나머지만 돌아가며 나눠요. 공문은 룹마다 흩어지게 먼저 배치해요.
+    const rest = [];
+    byZone[zone].forEach(p => {
+      const own = rows.find(r => r.leader === p.name);
+      if (own) own.members.push(p); else rest.push(p);
+    });
+    rest.sort((a, b) => (b.gwanmun ? 1 : 0) - (a.gwanmun ? 1 : 0));
+    rest.forEach((p, i) => rows[i % rows.length].members.push(p));
+  });
+  renderBoard();
+  toast("자동 배치했어요 — 필요하면 드래그로 조정하세요");
+}
+
+/* ---------- 보드 렌더 (드래그 앤 드롭) ---------- */
+function personHTML(p, idx, zone) {
+  const cls = p.gwanmun ? "gwanmun" : (zone === "격수" ? "g1" : "g2");
+  return `<div class="person ${cls}" draggable="true" data-idx="${idx}">${esc(p.name)}<span class="detail">${esc(p.detail || "")}</span></div>`;
+}
+function renderBoard() {
+  poolMembers = poolMembers.filter((p, i, a) => a.findIndex(x => x.name === p.name) === i);
+  // 룹표가 있으면 대기 칸은 비어 있어도 보여줘요 — 빼고 싶은 사람을 여기로 옮길 수 있게.
+  $("#pool").classList.toggle("hide", boardRows.length === 0 && poolMembers.length === 0);
+  $("#poolSlots").innerHTML = poolMembers.length ? poolMembers.map((p, i) => personHTML(p, i, "pool")).join("")
+    : `<span class="sub">비어 있음 — 룹에서 뺄 사람을 여기로 옮기면 돼요</span>`;
+  const g = boardRows.filter(r => r.zone === "격수"), d = boardRows.filter(r => r.zone === "도사");
+  let h = "";
+  if (g.length) { h += `<div class="zone-h g">격수</div>`; g.forEach((r, ri) => h += leaderRowHTML(r, boardRows.indexOf(r))); }
+  if (d.length) { h += `<div class="zone-h d">도사</div>`; d.forEach((r, ri) => h += leaderRowHTML(r, boardRows.indexOf(r))); }
+  $("#board").innerHTML = h || `<div class="sub" style="padding:8px 4px">목록을 인식하고 자동 배치를 눌러주세요.</div>`;
+  bindDnd();
+}
+function leaderRowHTML(r, rowIdx) {
+  return `<div class="leader-row"><div class="leader-name">${esc(r.leader)} <span class="sub">(${r.members.length}명)</span></div>
+    <div class="slots" data-row="${rowIdx}">${r.members.map((p, i) => personHTML(p, i, r.zone)).join("")}</div></div>`;
+}
+let dragSrc = null, picked = null;   // picked: 폰에서 끌기가 안 되니 톡 눌러 고르고 → 자리를 눌러 옮기는 방식
+function arrOf(row) { return row === "pool" ? poolMembers : boardRows[row].members; }
+function moveTo(src, dstRow) {
+  const srcArr = arrOf(src.row);
+  const person = srcArr.splice(src.idx, 1)[0];
+  if (!person) return;
+  arrOf(dstRow).push(person);
+  picked = null; dragSrc = null;
+  renderBoard();
+}
+function bindDnd() {
+  document.querySelectorAll(".person").forEach(el => {
+    const row = el.closest(".slots").dataset.row, idx = Number(el.dataset.idx);
+    if (picked && picked.row === row && picked.idx === idx) el.classList.add("picked");
+    el.addEventListener("dragstart", e => { dragSrc = { row, idx }; e.dataTransfer.effectAllowed = "move"; });
+    el.addEventListener("click", e => {
+      e.stopPropagation();
+      if (picked && picked.row === row && picked.idx === idx) { picked = null; renderBoard(); return; }
+      picked = { row, idx }; renderBoard();
+    });
+  });
+  document.querySelectorAll(".slots").forEach(el => {
+    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("over"); });
+    el.addEventListener("dragleave", () => el.classList.remove("over"));
+    el.addEventListener("drop", e => { e.preventDefault(); el.classList.remove("over"); if (dragSrc) moveTo(dragSrc, el.dataset.row); });
+    el.addEventListener("click", () => { if (picked) moveTo(picked, el.dataset.row); });
+  });
+  $("#pickHint").classList.toggle("hide", !picked);
+}
+
+async function saveBoard() {
+  if (!boardRows.length) return toast("배치된 내용이 없어요", 1);
+  const title = $("#expTitle").value.trim() || `${today()} 공성 룹표`;
+  const r = await write("board_save", { board: { title, rows: boardRows, pool: poolMembers, savedAt: today() } });
+  if (r) toast("저장했어요");
+}
+function today() { const d = new Date(), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+
+async function exportPng() {
+  if (!boardRows.length) return toast("배치된 내용이 없어요", 1);
+  try {
+    if (!window.html2canvas) await loadScript("html2canvas.min.js");
+  } catch (e) { return toast("이미지 기능을 불러오지 못했어요", 1); }
+  const wrap = document.createElement("div");
+  wrap.style.cssText = `position:fixed;left:-9999px;top:0;width:900px;padding:18px;background:${getComputedStyle(document.body).backgroundColor}`;
+  wrap.innerHTML = `<div style="font-size:20px;font-weight:800;margin-bottom:10px;color:${getComputedStyle(document.body).color}">${esc($("#expTitle").value.trim() || today() + " 공성 룹표")}</div>` + $("#board").innerHTML;
+  document.body.appendChild(wrap);
+  try {
+    const canvas = await html2canvas(wrap, { backgroundColor: getComputedStyle(document.body).backgroundColor, scale: 2 });
+    const a = document.createElement("a"); a.download = `${today()}_룹표.png`; a.href = canvas.toDataURL("image/png"); a.click();
+    toast("이미지를 저장했어요");
+  } catch (e) { toast("이미지 저장 실패", 1); } finally { wrap.remove(); }
+}
+
+/* ---------- 명단 관리 ---------- */
+function drawRosterTbl() {
+  if (!RE.length || RE._src !== D.roster) { RE = D.roster.map(p => ({ ...p })); RE._src = D.roster; }
+  $("#rosterTbl").innerHTML = `<div class="it sub" style="font-weight:600"><span>캐릭명</span><span>직업군</span><span>세부직업</span><span>공문</span><span></span></div>` +
+    RE.map((p, i) => `<div class="it">
+      <input value="${esc(p.name)}" oninput="RE[${i}].name=this.value">
+      <select onchange="RE[${i}].group=this.value">${D.groups.map(g => `<option value="${g}" ${p.group === g ? "selected" : ""}>${g}</option>`).join("")}</select>
+      <input value="${esc(p.detail || "")}" oninput="RE[${i}].detail=this.value">
+      <input type="checkbox" ${p.gwanmun ? "checked" : ""} onchange="RE[${i}].gwanmun=this.checked" style="width:20px">
+      <button class="sm ghost" onclick="RE.splice(${i},1);drawRosterTbl()">✕</button>
+    </div>`).join("");
+}
+function addRosterRow() { RE.push({ name: "", group: D.groups[0], detail: "", gwanmun: false }); drawRosterTbl(); }
+function pushNewToRoster() {
+  if (!RE.length || RE._src !== D.roster) { RE = D.roster.map(p => ({ ...p })); RE._src = D.roster; }
+  let n = 0;
+  parsed.forEach(p => { if (!RE.some(x => x.name === p.name)) { RE.push({ name: p.name, group: p.group || D.groups[0], detail: p.detail || "", gwanmun: false }); n++; } });
+  go("s-roster");
+  toast(n ? `${n}명 추가했어요 — 확인 후 명단 저장을 눌러주세요` : "추가할 사람이 없어요");
+}
+async function saveRoster() {
+  const list = RE.map(p => ({ name: p.name.trim(), group: p.group, detail: (p.detail || "").trim(), gwanmun: !!p.gwanmun })).filter(p => p.name);
+  if (new Set(list.map(p => p.name)).size !== list.length) return toast("이름이 중복돼요", 1);
+  const r = await write("roster_save", { list }); if (r) { RE = []; drawRosterTbl(); toast("명단 저장"); }
+}
+
+/* ---------- 룹장 관리 ---------- */
+function drawLeaderTbl() {
+  if (!LE.length || LE._src !== D.leaders) { LE = D.leaders.map(p => ({ ...p })); LE._src = D.leaders; }
+  $("#leaderTbl").innerHTML = `<div class="it sub" style="font-weight:600"><span>이름</span><span>구역</span><span></span></div>` +
+    LE.map((p, i) => `<div class="it">
+      <input value="${esc(p.name)}" oninput="LE[${i}].name=this.value">
+      <select onchange="LE[${i}].zone=this.value"><option value="격수" ${p.zone === "격수" ? "selected" : ""}>격수</option><option value="도사" ${p.zone === "도사" ? "selected" : ""}>도사</option></select>
+      <button class="sm ghost" onclick="LE.splice(${i},1);drawLeaderTbl()">✕</button>
+    </div>`).join("");
+}
+function addLeaderRow() { LE.push({ name: "", zone: "격수" }); drawLeaderTbl(); }
+async function saveLeaders() {
+  const list = LE.map(p => ({ name: p.name.trim(), zone: p.zone })).filter(p => p.name);
+  const r = await write("leaders_save", { list }); if (r) { LE = []; drawLeaderTbl(); toast("룹장 저장"); }
+}
+
+$("#imgIn") && $("#imgIn").addEventListener("change", onImgChange);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+boot();
+</script>
+</body>
+</html>
