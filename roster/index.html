@@ -660,10 +660,31 @@ function bindDnd() {
 }
 
 function boardTitle() { return $("#expTitle").value.trim() || `${today()} 공성 룹표`; }
+function siegeKey() { return today() + "|" + boardTitle(); }
+// 시트에 사람이 읽을 수 있는 표로 남겨요 (점수가 안 맞을 때 그날 배치를 보려고)
+function boardGrid() {
+  const show = p => p ? p.name + [p.detail, p.driver].filter(Boolean).map(x => `(${x})`).join("") : "";
+  const g = [];
+  groups.forEach(grp => {
+    grp.rows.forEach((r, i) => {
+      g.push([i === 0 ? grp.name : "", r.type].concat(r.people.map(show)));
+    });
+  });
+  if (poolMembers.length) g.push(["대기", "", ...poolMembers.map(show)]);
+  if (openers.length) {
+    g.push(["오픈", "운전자", ...openers.map(o => `${o.name} → ${o.driver || "(미정)"}${o.merc ? " [용병]" : ""}`)]);
+  }
+  // 오른쪽 빈 칸 잘라내기
+  let w = 0; g.forEach(r => { for (let i = r.length - 1; i >= 0; i--) if (String(r[i]).trim()) { w = Math.max(w, i + 1); break; } });
+  return g.map(r => r.slice(0, Math.max(3, w)));
+}
 async function saveBoard() {
   if (!groups.length) return toast("배치된 내용이 없어요", 1);
-  const r = await write("board_save", { board: { title: boardTitle(), groups, nc: NC, pool: poolMembers, openers, savedAt: today() } });
-  if (r && r.ok) toast("룹표를 저장했어요");
+  const r = await write("board_save", {
+    board: { title: boardTitle(), groups, nc: NC, pool: poolMembers, openers, savedAt: today() },
+    key: siegeKey(), grid: boardGrid()
+  });
+  if (r && r.ok) toast("룹표를 저장했어요 (시트에도 표로 남았어요)");
 }
 
 async function exportPng() {
@@ -715,7 +736,7 @@ async function accrue() {
   if (!groups.length) return toast("배치된 내용이 없어요", 1);
   const { rows, skipped } = buildAccrual();
   if (!rows.length) return toast("적립할 내용이 없어요 (점수 설정을 확인해 주세요)", 1);
-  const key = today() + "|" + boardTitle();
+  const key = siegeKey();
   const join = rows.filter(r => r.kind === "참여"), open = rows.filter(r => r.kind === "오픈"), merc = rows.filter(r => r.merc);
   let msg = `${boardTitle()}\n\n참여 ${join.length}명 · 오픈 ${open.length}명`;
   if (merc.length) msg += `\n(참여 중 용병 ${merc.length}명)`;
@@ -726,7 +747,11 @@ async function accrue() {
     if (!confirm("이 날짜·제목으로 이미 적립했어요.\n그래도 한 번 더 적립할까요? (점수가 두 번 들어가요)")) return;
     r = await write("score_add", { rows, key, date: today(), force: true });
   }
-  if (r && r.ok) { go("s-score"); toast(`적립 완료 — ${rows.length}건`); }
+  if (r && r.ok) {
+    // 적립 시점의 배치를 시트에 그대로 남겨둬요
+    await write("board_save", { board: { title: boardTitle(), groups, nc: NC, pool: poolMembers, openers, savedAt: today() }, key, grid: boardGrid() });
+    go("s-score"); toast(`적립 완료 — ${rows.length}건 (시트에 배치도 남겼어요)`);
+  }
 }
 
 /* ---------- 점수 탭 ---------- */
