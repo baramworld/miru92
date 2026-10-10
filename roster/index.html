@@ -111,6 +111,8 @@ table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
       <div id="rSign">
         <div class="sub" id="signInfo">모집을 열고 문파원이 신청하면 여기로 들어와요.</div>
         <button class="pri big-btn" style="margin-top:10px" onclick="loadSignups()">신청한 사람 불러오기</button>
+        <button class="big-btn" style="margin-top:8px" onclick="addNewSignups()">늦게 신청한 사람만 추가</button>
+        <div class="sub" style="margin-top:6px">위는 처음부터 다시 불러와요(배치가 지워져요). 아래는 지금 배치를 그대로 두고 새로 신청한 사람만 대기 칸에 넣어줘요.</div>
       </div>
       <div id="rText" class="hide">
         <textarea id="pasteBox" placeholder="카톡 투표 결과를 그대로 붙여넣으세요.&#10;&#10;참여 : 34명&#10;갓돼/검제&#10;화무결/진인&#10;&#10;미참여(오픈가능) : 11명&#10;소망/도사&#10;쉼/도인"></textarea>
@@ -189,6 +191,9 @@ table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
       <input id="mReason" placeholder="사유 (예: 어금니 1개 불출)" style="margin-top:8px">
       <button class="big-btn" style="margin-top:10px" onclick="manualScore()">기록</button>
     </div>
+
+    <h2>공성별 적립 (잘못 넣었으면 통째로 취소)</h2>
+    <div class="card list" id="keyList"></div>
 
     <h2>누적 점수</h2>
     <div class="card list rank" id="rankList"></div>
@@ -476,6 +481,28 @@ function loadSignups() {
   $("#addToRoster").classList.add("hide");
   if (D.recruit && !$("#expTitle").value.trim()) $("#expTitle").value = D.recruit.title;
   toast(`${parsed.length}명 불러왔어요 — 자동 배치를 눌러주세요`);
+}
+
+// 배치를 유지한 채, 아직 표에 없는 신청자만 대기 칸으로 넣어요.
+async function addNewSignups() {
+  await load();
+  const s = (D.signups || []).filter(x => x.status === "참여" || x.status === "오픈");
+  if (!s.length) return toast("들어온 신청이 없어요", 1);
+  const have = {};
+  allPeople().forEach(p => have[p.name] = true);
+  const add = s.filter(x => !have[x.name]);
+  if (!add.length) return toast("새로 신청한 사람이 없어요");
+  add.forEach(x => {
+    const ex = findRoster(x.name);
+    const p = { name: x.name, group: x.group || (ex ? ex.group : ""), detail: x.detail || (ex ? ex.detail : ""),
+                gwanmun: ex ? !!ex.gwanmun : false, driver: "", opened: x.status === "오픈" };
+    poolMembers.push(p);
+    if (x.status === "오픈" && !openers.some(o => o.name === x.name)) {
+      openers.push({ name: p.name, group: p.group, detail: p.detail, driver: "", merc: false });
+    }
+  });
+  renderBoard(); renderDrv();
+  toast(`${add.length}명 추가했어요 — 대기 칸에서 표로 옮겨주세요: ${add.map(x => x.name).slice(0, 6).join(", ")}`);
 }
 
 function parsePaste() {
@@ -850,6 +877,20 @@ let scKind = "";
 function renderScoreTab() {
   $("#setJoin").value = D.settings["참여점수"] ?? 1;
   $("#setOpen").value = D.settings["오픈점수"] ?? 1;
+  // 공성(공성키)별로 묶어서 보여줘요
+  const byKey = {};
+  (D.scores || []).forEach(s => {
+    if (!s.key) return;
+    const k = byKey[s.key] || (byKey[s.key] = { key: s.key, live: 0, del: 0, pts: 0, ids: [] });
+    if (s.del) k.del++; else { k.live++; k.pts += s.pts; k.ids.push(s.id); }
+  });
+  const ks = Object.values(byKey).reverse();
+  $("#keyList").innerHTML = ks.length ? ks.map(k => `<div class="it">
+      <div class="grow"><div><b>${esc(k.key.split("|").slice(1).join("|") || k.key)}</b></div>
+      <div class="sub">${esc(k.key.split("|")[0])} · ${k.live}건 / ${fmt(k.pts)}점${k.del ? ` · 취소됨 ${k.del}건` : ""}</div></div>
+      ${k.live ? `<button class="sm ghost" onclick="cancelKey('${esc(k.key)}')">적립 취소</button>` : `<span class="tag">취소됨</span>`}
+    </div>`).join("") : `<div class="sub">아직 공성 적립 기록이 없어요</div>`;
+
   const t = Object.entries(D.totals || {}).sort((a, b) => b[1] - a[1]);
   $("#rankList").innerHTML = t.length
     ? t.map(([n, v], i) => `<div class="it"><span class="sub">${i + 1}</span><div>${esc(n)}</div><div class="num" style="text-align:right">${fmt(v)}점</div></div>`).join("")
@@ -873,6 +914,17 @@ function renderScores() {
     <button class="sm ghost" onclick="editScore('${s.id}','${esc(s.t)}',${s.pts})">수정</button>
     <button class="sm ghost" onclick="delScore('${s.id}',${s.del})">${s.del ? "복구" : "삭제"}</button>
   </div>`).join("") || `<div class="sub">기록 없음</div>`;
+}
+// 한 공성의 적립을 통째로 취소해요 (테스트 정리, 잘못 적립 되돌리기)
+async function cancelKey(key) {
+  const ids = (D.scores || []).filter(s => s.key === key && !s.del).map(s => s.id);
+  if (!ids.length) return toast("취소할 게 없어요", 1);
+  const reason = prompt(`"${key}" 적립 ${ids.length}건을 취소해요.\n사유를 적어 주세요`, "테스트 정리");
+  if (reason === null) return;
+  if (!reason.trim()) return toast("사유를 적어야 취소돼요", 1);
+  if (!confirm(`${ids.length}건을 취소할까요?\n(기록은 남고 합계에서만 빠져요)`)) return;
+  const r = await write("score_del", { ids, reason: reason.trim() });
+  if (r && r.ok) toast(`${ids.length}건 취소했어요`);
 }
 async function saveSettings() {
   const r = await write("settings_save", { settings: { "참여점수": Number($("#setJoin").value) || 0, "오픈점수": Number($("#setOpen").value) || 0 } });
