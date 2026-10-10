@@ -6,280 +6,219 @@
 <meta name="theme-color" content="#14161a">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
-<title>공성 룹표</title>
+<title>문파 빨시 장부</title>
 <style>
-:root{--bg:#f5f5f7;--card:#fff;--tx:#1b1d21;--sub:#6b7280;--line:#e3e5e9;--pri:#d63c3c;--pri-t:#fff;--ok:#1f9d55;--warn:#c47a00;--chip:#eceef2;--g1:#3b6fd6;--g2:#2e9e6b}
-@media(prefers-color-scheme:dark){:root{--bg:#14161a;--card:#1d2026;--tx:#eceef2;--sub:#9aa1ad;--line:#2b2f37;--chip:#2a2e36;--ok:#3ecf80;--warn:#f0b04a;--g1:#5b8ff0;--g2:#4cc090}}
+:root{--bg:#f5f5f7;--card:#fff;--tx:#1b1d21;--sub:#6b7280;--line:#e3e5e9;--pri:#d63c3c;--pri-t:#fff;--ok:#1f9d55;--warn:#c47a00;--chip:#eceef2}
+@media(prefers-color-scheme:dark){:root{--bg:#14161a;--card:#1d2026;--tx:#eceef2;--sub:#9aa1ad;--line:#2b2f37;--chip:#2a2e36;--ok:#3ecf80;--warn:#f0b04a}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px}
 body{padding:env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom))}
-main{max-width:1400px;margin:0 auto;padding:12px}
-@media(min-width:1100px){main{padding:16px 24px}}
+main{max-width:640px;margin:0 auto;padding:12px}
 h2{font-size:13px;color:var(--sub);margin:16px 4px 8px;font-weight:600}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.big{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1.1}
 .sub{color:var(--sub);font-size:13px}
 .row{display:flex;gap:8px;align-items:center}
 .row.wrap{flex-wrap:wrap}
 .grow{flex:1;min-width:0}
-input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx);font-size:15px;font-family:inherit}
-textarea{resize:vertical;min-height:150px;line-height:1.5}
-@media(min-width:1100px){textarea{min-height:260px}}
+input,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx);font-size:15px;font-family:inherit}
+input[type=number]{-moz-appearance:textfield}
 button{font-family:inherit;font-size:14px;border:0;border-radius:10px;padding:10px 14px;background:var(--chip);color:var(--tx);cursor:pointer}
 button.pri{background:var(--pri);color:var(--pri-t);font-weight:700}
 button.big-btn{width:100%;padding:14px;font-size:16px}
 button.sm{padding:6px 10px;font-size:13px}
 button.on{background:var(--pri);color:var(--pri-t)}
 button.ghost{background:transparent;border:1px solid var(--line)}
-a.btn{display:inline-block;text-decoration:none;text-align:center}
 .chip{padding:8px 12px;border-radius:999px;background:var(--chip);font-size:14px}
 .chip.on{background:var(--pri);color:var(--pri-t)}
-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;border-radius:0;background:transparent;padding:14px 0;color:var(--sub);font-weight:600;font-size:13px}
-nav button[aria-current=true]{color:var(--pri)}
-#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:9;max-width:90vw}
-#toast.show{opacity:1}#toast.err{background:#b3261e}
-.hide{display:none!important}
-.bad{color:var(--pri)}.ok{color:var(--ok)}
-#busy{position:fixed;inset:0;background:rgba(0,0,0,.15);z-index:8;display:flex;align-items:center;justify-content:center}
-#busy>div{background:var(--card);border:1px solid var(--line);padding:12px 22px;border-radius:12px;font-weight:700}
+.chip small{opacity:.7;margin-left:4px}
 .list .it{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .list .it:last-child{border-bottom:0}
 .tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--chip);color:var(--sub)}
-.num{font-variant-numeric:tabular-nums;font-weight:700}
+.t-불출{color:var(--pri)}.t-회수{color:var(--ok)}.t-입고{color:var(--warn)}.t-조정{color:#8a7fd6}
 .del{opacity:.4;text-decoration:line-through}
-
-/* board — 원래 쓰던 시트 표 모양 */
-#board{overflow-x:auto}
-table.rt{border-collapse:collapse;background:var(--card);font-size:13px}
-table.rt td{border:1px solid var(--line);padding:0;height:30px;min-width:96px;vertical-align:middle}
-table.rt td.gname{min-width:52px;width:52px;text-align:center;font-weight:800;color:#fff}
-table.rt td.rlabel{min-width:46px;width:46px;text-align:center;font-weight:700;background:var(--chip)}
-table.rt td.drop.over{outline:2px solid var(--pri);outline-offset:-2px}
-table.rt tr.t격수 td.drop{background:rgba(120,150,230,.16)}
-table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
-table.rt tr.t주술사 td.drop{background:rgba(170,120,220,.14)}
-.cell{padding:4px 7px;cursor:grab;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
-.cell.gwanmun{color:var(--pri);font-weight:800}
-.cell.picked{outline:3px solid var(--pri);outline-offset:-3px;border-radius:4px}
-.cell .detail{opacity:.6;font-size:11px}
-.cell .drv{font-size:10px;background:rgba(0,0,0,.14);border-radius:4px;padding:0 4px;margin-left:3px}
-@media(prefers-color-scheme:dark){.cell .drv{background:rgba(255,255,255,.16)}}
-.slots{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;border:1px dashed var(--line);border-radius:8px;padding:6px}
-.slots.over{background:var(--chip)}
-.person{background:var(--chip);border-radius:8px;padding:6px 10px;font-size:13px;cursor:grab;display:flex;align-items:center;gap:4px;user-select:none}
-.person.gwanmun{background:var(--pri);color:#fff;font-weight:700}
-.person.picked{outline:3px solid var(--pri);outline-offset:1px}
-.person .detail{opacity:.65;font-size:11px}
-.pool{border:2px dashed var(--sub);border-radius:12px;padding:12px;margin-bottom:12px}
-.pool-title{font-weight:700;font-size:14px;margin-bottom:8px;color:var(--sub)}
-#poolSlots{gap:8px;min-height:56px;padding:8px}
-#poolSlots .person{font-size:15px;padding:10px 14px;border-radius:10px;gap:6px}
-#poolSlots .person .detail{font-size:12px}
-/* 대기 칸은 직업이 섞이니 색으로 구분해요 */
-.person.jG{background:#cfe0fb}
-.person.jD{background:#cdeedd}
-.person.jJ{background:#e4d3f7}
-.person.jX{background:var(--chip)}
-.merc{background:#ffe6c7;color:#4a3208;border-radius:10px;padding:10px 14px;font-size:15px;cursor:grab;display:flex;align-items:center;gap:6px;user-select:none}
-.merc .detail{opacity:.7;font-size:12px}
-.merc.picked{outline:3px solid var(--pri);outline-offset:1px}
-.merc.used{opacity:.45;text-decoration:line-through}
-#drvList input.over{outline:3px solid var(--pri)}
-@media(prefers-color-scheme:dark){
-  .person.jG{background:#27406e}
-  .person.jD{background:#1f4a36}
-  .person.jJ{background:#3d2c5c}
-}
-.person.gwanmun{background:var(--pri)!important;color:#fff;font-weight:700}
-#rosterTbl .it,#leaderTbl .it{display:grid;grid-template-columns:1fr 90px 1fr 56px 34px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
-#leaderTbl .it{grid-template-columns:1fr 90px 34px}
-.drvrow{display:grid;grid-template-columns:1fr 1fr 60px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
-.drvrow:last-child{border-bottom:0}
-.rank .it{display:grid;grid-template-columns:34px 1fr 90px;gap:8px;align-items:center}
+.num{font-variant-numeric:tabular-nums;font-weight:700}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border-radius:0;background:transparent;padding:14px 0;color:var(--sub);font-weight:600}
+nav button[aria-current=true]{color:var(--pri)}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:9}
+#toast.show{opacity:1}#toast.err{background:#b3261e}
+.hide{display:none!important}
+.ok{color:var(--ok)}.bad{color:var(--pri)}
+nav button{font-size:13px}
+.seg{display:flex;gap:6px;margin-bottom:10px}.seg button{flex:1}
+.mid{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g2 .card{margin:0}
 </style>
 </head>
 <body>
 <main>
+  <!-- 최초 설정 -->
   <section id="setup" class="hide">
     <div class="card">
       <h2 style="margin-top:0">처음 한 번만 연결해요</h2>
+      <p class="sub">Apps Script 웹 앱 배포 URL을 붙여넣어 주세요.</p>
       <input id="apiIn" placeholder="https://script.google.com/macros/s/.../exec">
       <button class="pri big-btn" style="margin-top:10px" onclick="saveApi()">연결</button>
     </div>
   </section>
 
-  <!-- 배치 -->
-  <section id="s-board" class="hide">
+  <!-- 현황 -->
+  <section id="s-home" class="hide">
+    <div class="g2" style="margin-bottom:10px">
+      <div class="card"><div class="sub">문파자금</div><div class="mid" id="balG">-</div><div class="sub" id="balGs"></div></div>
+      <div class="card"><div class="sub">현금</div><div class="mid" id="balC">-</div><div class="sub" id="balCs"></div></div>
+    </div>
+    <div class="card"><div class="sub" style="margin-bottom:6px">성 수입 누적 (전)</div><div class="g2" id="castleBox"></div></div>
+    <div class="g2" style="margin-bottom:10px" id="stockBox"></div>
+    <div class="card" id="todayBox"></div>
+    <h2>미반납 (불출 − 회수)</h2>
+    <div class="card list" id="outList"></div>
+  </section>
+
+  <!-- 입력 -->
+  <section id="s-write" class="hide">
     <div class="card">
-      <h2 style="margin-top:0">공지방에 올릴 신청 받기</h2>
-      <div id="recBox"></div>
-      <div id="recForm">
-        <div class="row wrap" style="margin-top:8px">
-          <input class="grow" id="recTitle" placeholder="제목 (예: 금요일 수성 [백호 장훈])" style="min-width:200px">
-          <input id="recDate" type="date" style="width:170px">
-        </div>
-        <button class="pri big-btn" style="margin-top:10px" onclick="openRecruit()">모집 열기</button>
+      <div class="row wrap" id="itemChips"></div>
+      <div class="row wrap" id="typeChips" style="margin-top:10px"></div>
+      <div id="pickArea">
+        <div class="row wrap" id="roleBtns" style="margin-top:12px"></div>
+        <input id="filter" placeholder="이름 검색 / 새 이름 입력" style="margin-top:10px" oninput="renderPick()">
+        <div class="row wrap" id="nameChips" style="margin-top:10px;max-height:190px;overflow:auto"></div>
+        <div class="list" id="selList" style="margin-top:6px"></div>
       </div>
-    </div>
-
-    <div class="card">
-      <h2 style="margin-top:0">신청 받은 사람</h2>
-      <div class="sub" id="signInfo">모집을 열고 문파원이 신청하면 여기로 들어와요.</div>
-      <div class="list" id="signList" style="margin-top:10px"></div>
-      <button class="pri big-btn" style="margin-top:12px" onclick="loadSignups()">신청한 사람 불러오기</button>
-      <button class="big-btn" style="margin-top:8px" onclick="addNewSignups()">늦게 신청한 사람만 추가</button>
-      <div class="sub" style="margin-top:6px">위는 처음부터 다시 불러와요(배치가 지워져요). 아래는 지금 배치를 그대로 두고 새로 신청한 사람만 대기 칸에 넣어줘요.</div>
-      <button class="pri big-btn" style="margin-top:10px" onclick="autoArrange()">자동 배치</button>
-      <div class="sub" id="parsedInfo" style="margin-top:8px"></div>
-      <button class="sm ghost hide" id="addToRoster" style="margin-top:8px" onclick="pushNewToRoster()"></button>
-      <button class="sm ghost" style="margin-top:8px;width:100%" onclick="resetAll()">전체 지우기 (처음부터 다시)</button>
-    </div>
-
-    <div id="drvCard" class="card hide">
-      <h2 style="margin-top:0">아이디 오픈 — 운전자 지정</h2>
-      <p class="sub" style="margin-top:0">오픈한 캐릭을 누가 운전하는지 적어주세요. 비워두면 점수 적립에서 빠져요.</p>
-      <div id="mercWrap" class="hide" style="margin:0 0 14px">
-        <div class="sub" style="margin-bottom:6px">운전 가능한 용병 — 운전자 칸에 끌어다 놓으세요</div>
-        <div id="mercPool" class="row wrap" style="gap:8px"></div>
+      <div class="row" style="margin-top:12px">
+        <div class="grow"><div class="sub" id="qLabel">수량 (전체 적용)</div><input id="q0" type="number" inputmode="numeric" oninput="applyQ()"></div>
       </div>
-      <div id="drvList"></div>
-    </div>
-
-    <div id="pickHint" class="card hide" style="padding:10px 14px;border-color:var(--pri)">
-      <b>한 명 골랐어요</b> <span class="sub">— 옮길 룹의 빈 칸을 눌러주세요. 다시 누르면 취소돼요.</span>
-    </div>
-
-    <div id="pool" class="pool hide">
-      <div class="pool-title">대기 (자리 없음 — 드래그하거나 눌러서 넣어주세요)</div>
-      <div class="slots" id="poolSlots" data-row="pool"></div>
-    </div>
-
-    <div class="card" style="padding:10px 14px">
-      <div class="row wrap">
-        <button class="sm ghost" onclick="addGroup()">+ 룹 추가</button>
-        <button class="sm ghost" onclick="addRow('격수')">+ 격수 줄</button>
-        <button class="sm ghost" onclick="addRow('도사')">+ 도사 줄</button>
-        <button class="sm ghost" onclick="addRow('주술사')">+ 주술사 줄</button>
-        <button class="sm ghost" onclick="setCols()">칸 수 바꾸기</button>
-        <span class="sub grow" id="colInfo"></span>
-      </div>
-    </div>
-
-    <div id="board"></div>
-
-    <div class="card">
-      <input id="expTitle" placeholder="룹표 제목 (예: 금요일 수성 [백호 장훈])">
-      <div class="row wrap" style="margin-top:10px">
-        <button class="pri grow" onclick="saveBoard()">룹표 저장</button>
-        <button class="grow" onclick="exportPng()">이미지로 추출</button>
-      </div>
-      <div class="sub" style="margin-top:8px">이미지로 추출을 누르면 지금 룹표가 PNG 그림 파일로 저장돼요. 카톡에 그대로 올리면 돼요.</div>
-      <button class="big-btn" style="margin-top:12px;background:var(--g2);color:#fff;font-weight:700" onclick="accrue()">공성 끝 — 점수 적립</button>
-      <div class="sub" style="margin-top:6px">공성이 끝난 뒤 한 번만 누르세요. 같은 날짜·제목으로 이미 적립했으면 막아줘요.</div>
+      <div class="sub" style="margin-top:12px">날짜</div>
+      <input id="wDate" type="date" style="margin-top:4px">
+      <input id="memo" placeholder="비고 (선택)" style="margin-top:10px">
+      <button class="pri big-btn" style="margin-top:12px" onclick="submitRec()">저장</button>
     </div>
   </section>
 
-  <!-- 점수 -->
-  <section id="s-score" class="hide">
+  <!-- 자금 입력 -->
+  <section id="s-fund" class="hide">
     <div class="card">
-      <h2 style="margin-top:0">점수 설정</h2>
-      <div class="row wrap">
-        <div class="grow"><div class="sub">참여 (운전한 사람)</div><input id="setJoin" type="number" inputmode="numeric"></div>
-        <div class="grow"><div class="sub">오픈 (캐릭 빌려준 사람)</div><input id="setOpen" type="number" inputmode="numeric"></div>
+      <div class="row wrap" id="fmodeChips"></div>
+
+      <div id="fMain">
+        <div class="sub" style="margin-top:12px">계정</div>
+        <div class="row wrap" id="acctChips" style="margin-top:6px"></div>
+        <div class="sub" style="margin-top:12px">분류</div>
+        <div class="row wrap" id="catChips" style="margin-top:6px"></div>
+        <div id="castleRow" class="hide"><div class="sub" style="margin-top:12px">성</div><div class="row wrap" id="castleChips" style="margin-top:6px"></div></div>
+        <input id="fTarget" placeholder="대상 (문파원 캐릭명, 선택)" style="margin-top:12px">
+        <input id="fAmt" inputmode="decimal" placeholder="금액 (예: 141.4만 / 2083400)" style="margin-top:10px" oninput="fPrev()">
+        <div class="sub" id="fAmtP" style="margin-top:4px"></div>
       </div>
-      <button class="big-btn" style="margin-top:10px" onclick="saveSettings()">설정 저장</button>
-    </div>
 
-    <div class="card">
-      <h2 style="margin-top:0">점수 직접 넣기 / 차감</h2>
-      <div class="row wrap">
-        <input class="grow" id="mName" placeholder="대상 캐릭명" style="min-width:140px">
-        <input id="mPts" type="number" inputmode="numeric" placeholder="점수 (차감은 -3)" style="width:150px">
+      <div id="fBase" class="hide">
+        <div class="sub" style="margin-top:12px">지금 가진 금액을 넣어요. 각 계정에 "기초 잔액" 수입으로 기록돼요.</div>
+        <input id="baseG" inputmode="decimal" placeholder="현재 문파자금 (전, 예: 208.34만)" style="margin-top:10px" oninput="fPrev()">
+        <input id="baseC" inputmode="decimal" placeholder="현재 현금 (원, 예: 198.9만)" style="margin-top:10px" oninput="fPrev()">
+        <div class="sub" id="baseP" style="margin-top:4px"></div>
       </div>
-      <input id="mReason" placeholder="사유 (예: 어금니 1개 불출)" style="margin-top:8px">
-      <button class="big-btn" style="margin-top:10px" onclick="manualScore()">기록</button>
-    </div>
 
-    <h2>공성별 적립 (잘못 넣었으면 통째로 취소)</h2>
-    <div class="card list" id="keyList"></div>
-
-    <h2>누적 점수</h2>
-    <div class="card list rank" id="rankList"></div>
-
-    <h2>점수 내역</h2>
-    <div class="card">
-      <div class="row wrap" id="scFilter"></div>
-      <input id="scQ" placeholder="이름 검색" style="margin-top:8px" oninput="renderScores()">
-    </div>
-    <div class="card list" id="scList"></div>
-  </section>
-
-  <!-- 명단 -->
-  <section id="s-roster" class="hide">
-    <div class="card">
-      <h2 style="margin-top:0">캐릭터 명단</h2>
-      <div id="rosterTbl"></div>
-      <div class="row" style="margin-top:10px">
-        <button onclick="addRosterRow()">+ 추가</button>
-        <button class="pri grow" onclick="saveRoster()">명단 저장</button>
+      <div id="fBar" class="hide">
+        <div class="sub" style="margin-top:12px">현금으로 바돈을 산 거래예요. 숫자만 적으면 만 단위예요. 정확한 금액은 "18000원"처럼 원/전을 붙여요.</div>
+        <input id="bCash" inputmode="decimal" placeholder="현금 지출 (예: 2 = 2만원, 1.8 = 1.8만원)" style="margin-top:10px" oninput="fPrev()">
+        <input id="bGold" inputmode="decimal" placeholder="현금으로 구매한 바돈 금액 (예: 1 = 1만전, 1.8 = 1만8천전)" style="margin-top:10px" oninput="fPrev()">
+        <div class="sub" id="bP" style="margin-top:4px"></div>
       </div>
+
+      <div id="fBuy" class="hide">
+        <div class="sub" style="margin-top:12px">품목 입고와 문파자금 지출이 같이 기록돼요</div>
+        <div class="row wrap" id="buyItemChips" style="margin-top:8px"></div>
+        <input id="yQty" type="number" inputmode="numeric" placeholder="개수" style="margin-top:10px" oninput="fPrev()">
+        <input id="yUnit" inputmode="decimal" placeholder="개당 가격 (전, 예: 1.4만)" style="margin-top:10px" oninput="fPrev()">
+        <div class="sub" id="yP" style="margin-top:4px"></div>
+      </div>
+
+      <div class="sub" style="margin-top:12px">날짜</div>
+      <input id="fDate" type="date" style="margin-top:4px">
+      <input id="fMemo" placeholder="비고 (선택)" style="margin-top:10px">
+      <button class="pri big-btn" style="margin-top:12px" onclick="submitFund()">저장</button>
     </div>
   </section>
 
-  <!-- 룹장 -->
-  <section id="s-leader" class="hide">
+  <!-- 기록 -->
+  <section id="s-log" class="hide">
+    <div class="seg"><button id="lgR" class="on" onclick="setLog('r')">품목</button><button id="lgF" onclick="setLog('f')">자금</button></div>
+    <div id="rFilter" class="row wrap"></div>
+    <input id="logQ" placeholder="검색" style="margin-top:8px" oninput="renderLog()">
+    <div id="fFilter" class="hide" style="margin-top:10px"></div>
+    <div id="fSum"></div>
+    <div class="card list" id="logList" style="margin-top:10px"></div>
+  </section>
+
+  <!-- 관리 -->
+  <section id="s-admin" class="hide">
+    <h2>재고 검산</h2>
     <div class="card">
-      <h2 style="margin-top:0">룹장 목록 (반고정)</h2>
-      <p class="sub" style="margin-top:0">격수 구역 룹장을 위에, 도사 구역 룹장을 아래에 두면 룹표 순서도 그렇게 나와요.</p>
-      <div id="leaderTbl"></div>
-      <div class="row" style="margin-top:10px">
-        <button onclick="addLeaderRow()">+ 추가</button>
-        <button class="pri grow" onclick="saveLeaders()">룹장 저장</button>
-      </div>
+      <p class="sub" style="margin-top:0">카톡으로 받은 "남은 수량"을 적으면 계산값과 비교해서 남겨요.</p>
+      <div class="row wrap" id="ckItemChips"></div>
+      <div class="row" style="margin-top:8px"><input id="chkQ" type="number" inputmode="numeric" placeholder="보고 수량"><input id="chkM" placeholder="메모"></div>
+      <button class="big-btn" style="margin-top:10px" onclick="submitCheck()">검산 기록</button>
+      <div class="list" id="chkList" style="margin-top:8px"></div>
     </div>
+    <h2>자금 검산</h2>
     <div class="card">
-      <h2 style="margin-top:0">연결된 구글시트</h2>
-      <a class="btn big-btn" id="sheetLink" href="#" target="_blank" rel="noopener" style="background:var(--chip);color:var(--tx);padding:14px;border-radius:10px">시트 열기</a>
-      <div class="row wrap" style="margin-top:10px">
-        <button class="sm ghost" onclick="localStorage.removeItem('pw');toast('비밀번호를 다음 저장 때 다시 물어요')">비밀번호 다시 입력</button>
-        <button class="sm ghost" onclick="if(confirm('연결 URL을 바꿀까요?')){localStorage.removeItem('api');location.reload()}">연결 URL 변경</button>
-      </div>
+      <p class="sub" style="margin-top:0">카톡의 "OO전 남음" 보고를 적어 계산 잔액과 비교해요.</p>
+      <div class="row wrap" id="fcAcct"></div>
+      <div class="row" style="margin-top:8px"><input id="fcQ" inputmode="decimal" placeholder="보고 금액 (예: 208.34만)"><input id="fcM" placeholder="메모"></div>
+      <button class="big-btn" style="margin-top:10px" onclick="submitFCheck()">자금 검산 기록</button>
+      <div class="list" id="fcList" style="margin-top:8px"></div>
+    </div>
+    <h2>명단 (직책은 언제든 수정)</h2>
+    <div class="card">
+      <div id="rosterEd"></div>
+      <div class="row" style="margin-top:10px"><button onclick="addRow()">+ 추가</button><button class="pri grow" onclick="saveRoster()">명단 저장</button></div>
+    </div>
+    <h2>기타</h2>
+    <div class="card row wrap">
+      <button class="ghost sm" onclick="localStorage.removeItem('pw');toast('비밀번호를 다음 저장 때 다시 물어요')">비밀번호 다시 입력</button>
+      <button class="ghost sm" onclick="if(confirm('연결 URL을 바꿀까요?')){localStorage.removeItem('api');location.reload()}">연결 URL 변경</button>
     </div>
   </section>
 </main>
 
 <nav id="nav" class="hide">
-  <button data-t="s-board" aria-current="true">배치</button>
-  <button data-t="s-score">점수</button>
-  <button data-t="s-roster">명단</button>
-  <button data-t="s-leader">룹장</button>
+  <button data-t="s-home" aria-current="true">현황</button>
+  <button data-t="s-write">빨시</button>
+  <button data-t="s-fund">자금</button>
+  <button data-t="s-log">기록</button>
+  <button data-t="s-admin">관리</button>
 </nav>
 <div id="toast"></div>
-<div id="busy" class="hide"><div>저장 중…</div></div>
+<div id="busy" class="hide" style="position:fixed;inset:0;background:rgba(0,0,0,.15);z-index:8;display:flex;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--line);padding:12px 22px;border-radius:12px;font-weight:700">저장 중…</div>
+</div>
 
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = n => Number(n || 0).toLocaleString("ko-KR");
-const DEFAULT_API = "https://script.google.com/macros/s/AKfycbw0M5R3wzrOh6fgey3lm6wpS0IhXS5pgaZXAWvHFxq6GNeB5d8XlcXge-uV6sIqwKcw/exec";
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/1ql68dJWN7M_9E3aF1DROmmVTUE-CXuyY6Kf2NYJlI-M/edit";
+const DEFAULT_API = "https://script.google.com/macros/s/AKfycbywfRyr2Aqul63z1v9sjbw9Y6K-kC5sTht5h78yN59buC9A0WCZkc6Or3v5WGLPKRNw/exec";
 let API = localStorage.getItem("api") || DEFAULT_API;
-let D = { roster: [], leaders: [], board: null, groups: ["전사","도사","도적","주술사"], kinds: ["참여","오픈","차감","기타"],
-          settings: { 참여점수: 1, 오픈점수: 1 }, scores: [], totals: {}, usedKeys: [],
-          recruit: null, signups: [], recruits: [], trash: [], revs: {} };
-let tab = "s-board";
-let parsed = [];      // [{name, group, detail, gwanmun, kind}]
-// 표 구조: 룹마다 격수 줄 / 도사 줄이 있고, 줄마다 칸(NC개)에 사람이 들어가요.
-// groups = [{name:"1룹", rows:[{type:"격수"|"도사", people:[p|null, ...NC]}]}]
-let groups = [];
-let NC = 8;                                   // 한 줄에 들어가는 사람 칸 수
-const GCOLORS = ["#2b4bd8", "#e0a420", "#2e9e4f", "#8a4fd6", "#d6564f", "#2f9fb8"];
-let poolMembers = [], openers = [];   // openers: [{name, group, detail, driver, merc}]
-let mercPool = [];                    // 캐릭 미정 용병 — 운전자 칸에 끌어다 넣어요 [{name, by}]
-let RE = [], LE = [];
+let D = { roster: [], recs: [], checks: [], stock: {"빨시":0,"맑시":0}, funds: [], fchecks: [], bal: {"문파자금":0,"현금":0}, castles: {}, items: ["빨시","맑시"] };
+let type = "불출", item = "빨시", buyItem = "빨시", ckItem = "빨시", sel = [], R = [], tab = "s-home";
 
-function toast(m, err) { const t = $("#toast"); t.textContent = m; t.className = "show" + (err ? " err" : ""); clearTimeout(toast.h); toast.h = setTimeout(() => t.className = "", 2600); }
-function today() { const d = new Date(), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+function toast(m, err) { const t = $("#toast"); t.textContent = m; t.className = "show" + (err ? " err" : ""); clearTimeout(toast.h); toast.h = setTimeout(() => t.className = "", 2200); }
+
+function saveApi() {
+  const v = $("#apiIn").value.trim();
+  if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(v)) return toast("URL 형식을 확인해 주세요", 1);
+  localStorage.setItem("api", v); API = v; boot();
+}
+
+async function load() {
+  try {
+    const r = await fetch(API).then(r => r.json());
+    if (r.ok) { D = r.data; renderAll(); }
+  } catch (e) { toast("불러오기 실패", 1); }
+}
 
 function devId_() {
   let id;
@@ -287,815 +226,311 @@ function devId_() {
   if (!id) { id = Math.random().toString(36).slice(2, 10).toUpperCase(); try { localStorage.setItem("dv", id); } catch (e) {} }
   return id;
 }
-function saveApi() {
-  const v = $("#apiIn").value.trim();
-  if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(v)) return toast("URL 형식을 확인해 주세요", 1);
-  localStorage.setItem("api", v); API = v; boot();
-}
-async function load(quiet) {
-  // 주소에 시간값을 붙여 브라우저가 옛 응답을 쓰지 못하게 해요
-  try { const r = await fetch(API + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.json()); if (r.ok) { D = r.data; onData(); } }
-  catch (e) { if (!quiet) toast("불러오기 실패", 1); }
-}
-// 지금 서버에 저장돼 있는 판 번호 — 내가 불러온 뒤 남이 먼저 저장했는지 비교용
-function revN(k) { return (D.revs && D.revs[k]) ? Number(D.revs[k].n) || 0 : 0; }
-// 남이 먼저 저장했을 때 물어봐요. 덮어쓰면 true, 새로 불러왔으면 false.
-function askOverwrite(r, what) {
-  const who = r.who ? `${r.who} 기기` : "다른 기기";
-  return confirm(`${who}가 ${r.at || "방금"}에 ${what}을(를) 먼저 저장했어요.\n\n[확인] 내 것으로 덮어쓰기\n[취소] 저장 취소하고 최신 내용 불러오기`);
-}
-
-/* ---------- 자동 새로고침 ---------- */
-// 서버 한 번 다녀오는 데 1~2초 걸려서 1초마다는 요청이 겹쳐요. 5초가 안전해요.
-const POLL_MS = 5000;
-let polling = false;
-async function tick() {
-  if (polling || document.hidden) return;        // 화면 안 볼 땐 쉬어요
-  if (!$("#busy").classList.contains("hide")) return;   // 저장 중이면 건너뛰어요
-  if (picked || dragSrc || mercPicked !== null) return; // 사람 옮기는 중이면 건드리지 않아요
-  const ae = document.activeElement;             // 뭔가 입력 중이면 커서가 튀니까 쉬어요
-  if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
-  if ((RE && RE.length) || (LE && LE.length)) return;   // 저장 안 한 명단·룹장 수정이 있으면 쉬어요
-  polling = true;
-  try { await load(true); } finally { polling = false; }
-}
-setInterval(tick, POLL_MS);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
 async function write(action, payload) {
   let pw = localStorage.getItem("pw") || prompt("비밀번호");
   if (!pw) return null;
   $("#busy").classList.remove("hide");
   try {
-    const r = await fetch(API, { method: "POST", cache: "no-store", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, pw, dev: devId_(), ...payload }) }).then(r => r.json());
-    if (!r.ok) {
-      if (r.error === "pw") { localStorage.removeItem("pw"); toast("비밀번호가 달라요", 1); }
-      else if (r.error !== "dup" && r.error !== "stale") toast(r.error || "실패", 1);
-      return r;
-    }
-    localStorage.setItem("pw", pw); D = r.data; onData(); return r;
+    const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, pw, dev: devId_(), ...payload }) }).then(r => r.json());
+    if (!r.ok) { if (r.error === "pw") { localStorage.removeItem("pw"); toast("비밀번호가 달라요", 1); } else toast(r.error || "실패", 1); return null; }
+    localStorage.setItem("pw", pw); D = r.data; renderAll(); return r;
   } catch (e) { toast("저장 실패 (네트워크)", 1); return null; } finally { $("#busy").classList.add("hide"); }
 }
+
 function boot() {
   const has = !!API;
   $("#setup").classList.toggle("hide", has);
   $("#nav").classList.toggle("hide", !has);
   if (!has) { document.querySelectorAll("main > section:not(#setup)").forEach(s => s.classList.add("hide")); return; }
-  $("#sheetLink").href = SHEET_URL;
   go(tab); load();
 }
+
 function go(t) {
   tab = t;
-  ["s-board", "s-score", "s-roster", "s-leader"].forEach(id => $("#" + id).classList.toggle("hide", id !== t));
+  ["s-home", "s-write", "s-fund", "s-log", "s-admin"].forEach(id => $("#" + id).classList.toggle("hide", id !== t));
   document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-current", b.dataset.t === t));
-  if (t === "s-roster") drawRosterTbl();
-  if (t === "s-leader") drawLeaderTbl();
-  if (t === "s-score") renderScoreTab();
+  if (t === "s-admin") renderAdmin();
 }
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => go(b.dataset.t));
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => { go(b.dataset.t); if (b.dataset.t === "s-home") load(); });
 
-function onData() {
-  if (D.board && D.board.groups && !groups.length) {
-    NC = Number(D.board.nc) || NC;
-    groups = D.board.groups.map(g => ({ name: g.name, rows: (g.rows || []).map(r => ({ type: r.type, people: (r.people || []).map(m => m ? { ...m } : null) })) }));
-    poolMembers = (D.board.pool || []).map(m => ({ ...m }));
-    openers = (D.board.openers || []).map(o => ({ ...o }));
-    mercPool = (D.board.mercs || []).map(m => ({ ...m }));
-    renderBoard(); renderDrv();
-  }
-  renderRecruit();
-  if (tab === "s-roster") drawRosterTbl();
-  if (tab === "s-leader") drawLeaderTbl();
-  if (tab === "s-score") renderScoreTab();
-}
+const today = () => { const d = new Date(), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+const live = () => D.recs.filter(r => !r.del);
 
-/* ---------- 직업 분류 ---------- */
-// 격수 = 전사 계열 + 도적 계열, 도사 = 도사 계열, 주술사 = 주술사 계열
-const JOB_RE = [
-  ["전사", /(전사|검객|검제|검황)/],
-  ["도적", /(도적|자객|진검|귀검)/],
-  ["도사", /(도사|도인|명인|진인)/],
-  ["주술사", /(주술사|술사|현사|현인)/]
-];
-// 룹표의 "격수" 줄에는 전사와 도적이 같이 들어가요.
-function isGyeoksu(g) { return g === "전사" || g === "도적" || g === "격수"; }
-function classify(jobText) {
-  const t = String(jobText || "");
-  for (const [g, re] of JOB_RE) if (re.test(t)) return g;
-  return "";
-}
-function findRoster(name) { return D.roster.find(p => p.name === name); }
-// 차수 칸에 직업 이름이 적혀 있으면(예: "90레벨주술사") 그걸 직업으로 봐요.
-// 신청할 때 직업 칩은 대충 누르고 차수에 진짜 직업을 적는 경우가 많아서요.
-function jobOf(group, detail) { return classify(detail) || String(group || ""); }
+function renderAll() { renderHome(); renderPick(); renderFund(); renderLog(); if (tab === "s-admin") renderAdmin(); }
 
-/* ---------- 붙여넣기 / OCR 파싱 ---------- */
-function parseLine(line) {
-  let s = String(line || "").replace(/[\\｜|·]/g, "/").replace(/\s*\/\s*/g, "/").replace(/\s+/g, " ").trim();
-  if (!s) return null;
-  let segs = s.split("/").map(x => x.trim()).filter(Boolean);
-  if (!segs.length) return null;
-  const name = segs[0].trim();
-  if (!name) return null;
-  let detail = "", group = "";
-  for (let i = segs.length - 1; i >= 1; i--) {
-    const g = classify(segs[i]);
-    if (g) { group = g; detail = segs[i].replace(/[()]/g, "").trim(); break; }
-  }
-  const existing = findRoster(name);
-  if (existing) return { name, group: existing.group || group, detail: existing.detail || detail, gwanmun: !!existing.gwanmun };
-  return { name, group, detail, gwanmun: false };
+function lastCheckOf(item_) { const arr = D.checks.filter(c => (c.item || "빨시") === item_); return arr[arr.length - 1]; }
+function renderHome() {
+  $("#balG").textContent = fmt(D.bal["문파자금"]) + "전"; $("#balGs").textContent = man(D.bal["문파자금"]) + fcLine("문파자금");
+  $("#balC").textContent = fmt(D.bal["현금"]) + "원"; $("#balCs").textContent = man(D.bal["현금"]) + fcLine("현금");
+  $("#castleBox").innerHTML = CASTLES.map(c => `<div><span class="sub">${c}</span><div class="num">${fmt(D.castles[c] || 0)}</div></div>`).join("");
+
+  $("#stockBox").innerHTML = ITEMS.map(it => { const c = lastCheckOf(it); const chk = c ? ` · 검산 ${c.diff === 0 ? "일치" : (c.diff > 0 ? "+" : "") + fmt(c.diff)}` : ""; return `<div class="card"><div class="sub">${it} 재고</div><div class="mid">${fmt((D.stock || {})[it])}</div><div class="sub">${chk}</div></div>`; }).join("");
+
+  const td = today(), L = live().filter(r => r.t.startsWith(td));
+  $("#todayBox").innerHTML = `<div class="sub" style="margin-bottom:6px">오늘 현황</div>` + ITEMS.map(it => { const o = L.filter(r => r.item === it && r.type === "불출").reduce((a, r) => a + r.qty, 0), i = L.filter(r => r.item === it && r.type === "회수").reduce((a, r) => a + r.qty, 0); return `<div class="row" style="padding:4px 0"><b style="width:52px">${it}</b><div class="grow sub">불출 <b class="t-불출">${fmt(o)}</b> · 회수 <b class="t-회수">${fmt(i)}</b></div></div>`; }).join("");
+
+  const m = {};
+  live().forEach(r => { if (!r.name) return; const k = r.name + "|" + r.item; if (r.type === "불출") m[k] = (m[k] || 0) + r.qty; else if (r.type === "회수") m[k] = (m[k] || 0) - r.qty; });
+  const roleOf = {}; D.roster.forEach(p => roleOf[p.name] = p.role);
+  const out = Object.entries(m).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  $("#outCnt") && ($("#outCnt").textContent = out.length);
+  $("#outList").innerHTML = out.length ? out.map(([k, v]) => { const [n, it] = k.split("|"); return `<div class="it"><div class="grow">${esc(n)} ${roleOf[n] ? `<span class="tag">${esc(roleOf[n])}</span>` : ""} <span class="tag">${esc(it)}</span></div><div class="num">${fmt(v)}</div></div>`; }).join("") : `<div class="sub">미반납 없음</div>`;
 }
 
-/* ---------- 모집 / 신청 ---------- */
-const VOTE_URL = location.href.replace(/[^/]*$/, "") + "vote/";
-function renderRecruit() {
-  const r = D.recruit;
-  $("#recForm").classList.toggle("hide", !!(r && r.open));
-  if (!r) {
-    $("#recBox").innerHTML = `<div class="sub">아직 모집이 안 열렸어요. 제목과 날짜를 넣고 열면 공지방에 올릴 링크가 나와요.</div>` + trashHTML();
-    if (!$("#recDate").value) $("#recDate").value = today();
-    $("#signInfo").textContent = "모집을 열고 문파원이 신청하면 여기로 들어와요.";
-    $("#signList").innerHTML = `<div class="sub">아직 신청한 사람이 없어요</div>`;   // 모집이 지워지면 목록도 비워요
+/* ---------- 입력 ---------- */
+function renderTypes() {
+  chips("#itemChips", ITEMS, item, v => { item = v; renderPick(); });
+  $("#typeChips").innerHTML = ["불출", "회수", "입고", "기초재고", "조정"].map(t => `<button class="chip ${t === type ? "on" : ""}" onclick="setType('${t}')">${t}</button>`).join("");
+  $("#pickArea").classList.toggle("hide", type === "입고" || type === "기초재고" || type === "조정");
+  $("#qLabel").textContent = type === "입고" ? `${item} 입고 수량` : type === "기초재고" ? `현재 실제 보유 ${item} 수량 (앱 계산 재고 ${fmt((D.stock || {})[item])})` : type === "조정" ? `${item} 조정 수량 (음수 가능, 예: -9)` : "수량 (전체 적용)";
+}
+function setType(t) { type = t; renderTypes(); }
+
+function renderPick() {
+  renderTypes();
+  const roles = [...new Set(D.roster.map(p => p.role).filter(Boolean))];
+  $("#roleBtns").innerHTML = roles.map(r => `<button class="sm ghost" onclick="pickRole('${esc(r).replace(/'/g, "\\'")}')">${esc(r)} 전원</button>`).join("");
+  const f = $("#filter").value.trim();
+  const names = D.roster.filter(p => !f || p.name.includes(f) || (p.role || "").includes(f));
+  let h = names.map(p => `<button class="chip ${sel.some(s => s.name === p.name) ? "on" : ""}" data-n="${esc(p.name)}">${esc(p.name)}${p.role ? `<small>${esc(p.role)}</small>` : ""}</button>`).join("");
+  if (f && !D.roster.some(p => p.name === f)) h += `<button class="chip" data-n="${esc(f)}" data-new="1">+ "${esc(f)}" 새로 추가</button>`;
+  $("#nameChips").innerHTML = h || `<span class="sub">명단이 비었어요. 이름을 입력해서 추가하세요.</span>`;
+  $("#nameChips").querySelectorAll("button").forEach(b => b.onclick = () => togglePick(b.dataset.n, b.dataset.new));
+  renderSel();
+}
+function qNow() { return Number($("#q0").value) || 0; }
+function togglePick(n, isNew) {
+  const i = sel.findIndex(s => s.name === n);
+  if (i >= 0) sel.splice(i, 1); else sel.push({ name: n, qty: qNow() });
+  if (isNew) $("#filter").value = "";
+  renderPick();
+}
+function pickRole(role) {
+  D.roster.filter(p => p.role === role).forEach(p => { if (!sel.some(s => s.name === p.name)) sel.push({ name: p.name, qty: qNow() }); });
+  renderPick();
+}
+function renderSel() {
+  const roleOf = {}; D.roster.forEach(p => roleOf[p.name] = p.role);
+  $("#selList").innerHTML = sel.map((s, i) => `<div class="it"><div class="grow">${esc(s.name)} ${roleOf[s.name] ? `<span class="tag">${esc(roleOf[s.name])}</span>` : ""}</div><input type="number" inputmode="numeric" value="${s.qty || ""}" style="width:90px" oninput="sel[${i}].qty=Number(this.value)||0"><button class="sm ghost" onclick="sel.splice(${i},1);renderPick()">✕</button></div>`).join("");
+}
+function applyQ() { const q = qNow(); sel.forEach(s => s.qty = q); renderSel(); }
+
+async function submitRec() {
+  const memo = $("#memo").value.trim();
+  let rows;
+  if (type === "기초재고") {
+    if ($("#q0").value === "") return toast("현재 보유 수량을 적어 주세요", 1);
+    const target = qNow(), cur = (D.stock || {})[item] || 0, diff = target - cur;
+    if (diff === 0) return toast("이미 앱 계산 재고와 같아요", 1);
+    if (diff < 0) return toast("앱 계산 재고가 더 많아요. 기록을 확인해 주세요", 1);
+    if (!confirm(`${item} 현재 ${fmt(target)}개 기준\n앱 재고 ${fmt(cur)} → ${fmt(target)}\n입고 ${fmt(diff)}개를 "기초 재고"로 기록할까요?`)) return;
+    const r = await write("add", { rows: [{ type: "입고", name: "", qty: diff, memo: memo || "기초 재고 보정", item }], date: $("#wDate").value });
+    if (r) { $("#wDate").value = today(); $("#q0").value = ""; $("#memo").value = ""; renderPick(); toast("저장했어요"); }
     return;
   }
-  const s = D.signups || [];
-  const j = s.filter(x => x.status === "참여").length, o = s.filter(x => x.status === "오픈").length, n = s.filter(x => x.status === "불참").length;
-  const nameLine = (st, color) => {
-    const list = s.filter(x => x.status === st);
-    if (!list.length) return "";
-    return `<div style="margin-top:6px"><span class="tag" style="background:${color};color:#fff">${st} ${list.length}</span>
-      <span class="sub"> ${list.map(x => esc(x.name) + (x.detail ? `(${esc(x.detail)})` : "") + (x.merc ? "[용병" + (x.by ? "·" + esc(x.by) : "") + "]" : "") + (x.drv ? "[운전만]" : "")).join(", ")}</span></div>`;
-  };
-  const names = nameLine("참여", "var(--ok)") + nameLine("오픈", "var(--warn)") + nameLine("불참", "var(--sub)");
-  // 장난 신청 등은 여기서 지워요
-  $("#signList").innerHTML = s.length ? s.slice().sort((a, b) => a.status.localeCompare(b.status) || a.name.localeCompare(b.name)).map(x => `<div class="it">
-      <span class="tag" style="background:${x.status === "참여" ? "var(--ok)" : x.status === "오픈" ? "var(--warn)" : "var(--chip)"};color:${x.status === "불참" ? "var(--sub)" : "#fff"}">${esc(x.status)}</span>
-      <div class="grow">${esc(x.name)}${x.detail ? ` <span class="sub">(${esc(x.detail)})</span>` : ""}${x.merc ? ` <span class="tag">용병${x.by ? " · " + esc(x.by) : ""}</span>` : ""}${x.drv ? ` <span class="tag" style="background:#ffe6c7;color:#4a3208">운전만</span>` : ""}</div>
-      <button class="sm ghost" onclick="delSignup('${x.id}','${esc(x.name)}')">삭제</button>
-    </div>`).join("") : `<div class="sub">아직 신청한 사람이 없어요</div>`;
-  const badge = r.open
-    ? `<span class="tag" style="background:var(--ok);color:#fff">모집 중</span>`
-    : `<span class="tag">모집 닫힘</span>`;
-  $("#recBox").innerHTML = `
-    <div><b>${esc(r.title)}</b> <span class="sub">${esc(r.date)}</span> ${badge}</div>
-    <div class="sub" style="margin:6px 0 2px">참여 ${j} · 오픈 ${o} · 불참 ${n}</div>
-    ${names || `<div class="sub">아직 아무도 신청 안 했어요</div>`}
-    <div style="height:10px"></div>` +
-    (r.open
-      ? `<input readonly value="${esc(VOTE_URL)}" onclick="this.select()">
-         <div class="row wrap" style="margin-top:8px">
-           <button class="pri grow" onclick="copyVote()">링크 복사</button>
-           <button class="grow" onclick="load().then(()=>toast('새로고침했어요'))">신청 새로고침</button>
-           <button class="sm ghost" onclick="closeRecruit()">모집 닫기</button>
-         </div>`
-      : `<div class="row wrap">
-           <button class="grow" onclick="reopenRecruit()">다시 열기</button>
-           <button class="grow" onclick="$('#recForm').classList.remove('hide');$('#recTitle').focus()">새 모집 만들기</button>
-         </div>
-         <div class="sub" style="margin-top:6px">닫혀 있어도 들어온 신청은 아래에서 불러올 수 있어요.</div>`) +
-    (isTest(r.title)
-      ? `<button class="sm ghost" style="width:100%;margin-top:12px;color:var(--warn)" onclick="purgeSiege(false)">테스트 정리 — 이 공성 기록 지우기</button>`
-      : "") +
-    `<button class="sm ghost" style="width:100%;margin-top:8px;color:var(--pri)" onclick="purgeSiege(true)">기록 삭제 — 제목을 받아쓰고 지워요</button>` +
-    trashHTML();
-  $("#signInfo").innerHTML = `<b>${esc(r.title)}</b> — 참여 ${j}명 · 오픈 ${o}명 · 불참 ${n}명` + (r.open ? "" : ` <span class="sub">(모집 닫힘)</span>`) + names;
-}
-async function delSignup(id, name) {
-  if (!confirm(`"${name}" 신청을 지울까요?\n(장난으로 넣은 것 정리용이에요)`)) return;
-  const r = await write("signup_del", { id });
-  if (r && r.ok) toast(`${name} 신청을 지웠어요`);
-}
-async function copyVote() {
-  try { await navigator.clipboard.writeText(VOTE_URL); toast("링크를 복사했어요 — 공지방에 붙여넣으세요"); }
-  catch (e) { toast("복사가 안 돼요. 주소 칸을 눌러 직접 복사해 주세요", 1); }
-}
-// 제목에 "테스트"가 들어간 공성에서만 간단 정리 버튼이 보여요.
-function isTest(t) { return /테스트/.test(String(t || "")); }
-
-// 공성 하나를 통째로 지워요 (신청 · 점수 · 룹표기록 · 모집) — 휴지통에 보관돼요.
-async function purgeSiege(strict) {
-  const r = D.recruit;
-  if (!r) return toast("지울 공성이 없어요", 1);
-  const keys = [r.key];
-  const sk = siegeKey();
-  if (keys.indexOf(sk) < 0) keys.push(sk);
-  const sg = (D.signups || []).length;
-  const sc = (D.scores || []).filter(x => keys.indexOf(x.key) >= 0 && !x.del).length;
-  const what = `"${r.title}" (${r.date})\n\n· 신청 ${sg}건\n· 점수 ${sc}건\n· 룹표기록 그날 덩어리\n· 모집 기록`;
-  if (strict) {
-    const t = prompt(`${what}\n\n지우려면 아래에 공성 제목을 그대로 적어주세요.\n(휴지통에 보관돼서 되돌릴 수 있어요)`, "");
-    if (t === null) return;
-    if (t.trim() !== r.title.trim()) return toast("제목이 달라요 — 안 지웠어요", 1);
-  } else {
-    if (!confirm(`${what}\n\n통째로 지울까요?\n(휴지통에 보관돼서 되돌릴 수 있어요)`)) return;
+  if (type === "조정") {
+    const qv = Number($("#q0").value);
+    if (!qv) return toast("조정 수량을 적어 주세요 (음수 가능)", 1);
+    if (!memo) return toast("조정 사유를 비고에 적어 주세요", 1);
+    if (!confirm(`${item} 조정 ${qv > 0 ? "+" : ""}${fmt(qv)}개\n사유: ${memo}\n저장할까요?`)) return;
+    const r = await write("add", { rows: [{ type: "조정", name: "", qty: qv, memo, item }], date: $("#wDate").value });
+    if (r) { $("#wDate").value = today(); $("#q0").value = ""; $("#memo").value = ""; renderPick(); toast("저장했어요"); }
+    return;
   }
-  const res = await write("purge_siege", { keys, title: r.title, clearBoard: true });
-  if (res && res.ok) {
-    parsed = []; groups = []; poolMembers = []; openers = []; mercPool = []; mercPicked = null; picked = null; dragSrc = null;
-    $("#expTitle").value = ""; $("#parsedInfo").innerHTML = "";
-    renderBoard(); renderDrv();
-    toast("지웠어요 — 휴지통에서 되돌릴 수 있어요");
+  if (type === "입고") rows = [{ type, name: "", qty: qNow(), memo, item }];
+  else rows = sel.filter(s => s.qty > 0).map(s => ({ type, name: s.name, qty: s.qty, memo, item }));
+  if (!rows.length) return toast("대상과 수량을 확인해 주세요", 1);
+  const sum = rows.reduce((a, r) => a + r.qty, 0);
+  if (!confirm(`${item} ${type} ${rows.length}건 · 합계 ${fmt(sum)}개\n저장할까요?`)) return;
+  const r = await write("add", { rows, date: $("#wDate").value });
+  if (r) { $("#wDate").value = today(); sel = []; $("#q0").value = ""; $("#memo").value = ""; $("#filter").value = ""; renderPick(); toast("저장했어요"); }
+}
+
+/* ---------- 기록 ---------- */
+
+const CAT_ALL = ["기초 잔액", "성 수입", "은나무 판매", "어금니", "용무기", "포인트 정산", "빨시 구매", "맑시 구매", "방쿠 구매", "바돈구매", "기타"];
+let lf = { acct: "", dir: "", cat: "", castle: "", period: "" };
+function inPeriod(t, p) {
+  if (!p) return true;
+  const d = t.slice(0, 10), td = today();
+  if (p === "오늘") return d === td;
+  if (p === "이번 달") return d.slice(0, 7) === td.slice(0, 7);
+  if (p === "최근 7일") { const x = new Date(); x.setDate(x.getDate() - 6); const pad = n => String(n).padStart(2, "0"); return d >= `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`; }
+  return true;
+}
+function fMatch(r) {
+  return (!lf.acct || r.acct === lf.acct) && (!lf.dir || r.dir === lf.dir) && (!lf.cat || r.cat === lf.cat)
+    && (!(lf.cat === "성 수입" && lf.castle) || r.target === lf.castle) && inPeriod(r.t, lf.period);
+}
+function renderFFilter() {
+  const box = $("#fFilter"); box.classList.toggle("hide", logMode !== "f");
+  if (logMode !== "f") return;
+  const G = [["계정", "acct", ["문파자금", "현금"]], ["방향", "dir", ["수입", "지출"]], ["분류", "cat", CAT_ALL]];
+  if (lf.cat === "성 수입") G.push(["성", "castle", CASTLES]);
+  G.push(["기간", "period", ["오늘", "최근 7일", "이번 달"]]);
+  box.innerHTML = `<div class="card">` + G.map(g => `<div class="sub" style="margin:8px 0 4px">${g[0]}</div><div class="row wrap" id="ff_${g[1]}"></div>`).join("") + `<button class="sm ghost" style="margin-top:10px" onclick="lf={acct:'',dir:'',cat:'',castle:'',period:''};renderLog()">필터 초기화</button></div>`;
+  G.forEach(g => chips("#ff_" + g[1], ["전체", ...g[2]], lf[g[1]] || "전체", v => { lf[g[1]] = v === "전체" ? "" : v; if (g[1] === "cat" && lf.cat !== "성 수입") lf.castle = ""; renderLog(); }));
+}
+
+function renderLog() {
+  const q = $("#logQ").value.trim();
+  renderFFilter();
+  $("#rFilter").classList.toggle("hide", logMode !== "r");
+  if (logMode === "r") chips("#rFilter", ["전체", ...ITEMS], rItem || "전체", v => { rItem = v === "전체" ? "" : v; renderLog(); });
+  if (logMode === "f") {
+    const L = D.funds.slice().reverse().filter(r => fMatch(r) && (!q || (r.target + r.cat + r.memo + r.acct).includes(q)));
+    const sum = {};
+    L.forEach(r => { if (r.del) return; const s = sum[r.acct] || (sum[r.acct] = { in: 0, out: 0 }); if (r.dir === "수입") s.in += r.amt; else s.out += r.amt; });
+    $("#fSum").innerHTML = Object.keys(sum).length ? `<div class="card" style="margin-top:10px">${Object.keys(sum).map(a => { const s = sum[a], u = UNIT[a] || "", d = s.in - s.out; return `<div class="row" style="padding:4px 0"><b style="width:64px">${esc(a)}</b><div class="grow sub">수입 <b class="t-회수">${fmt(s.in)}</b> · 지출 <b class="t-불출">${fmt(s.out)}</b></div><b class="${d >= 0 ? "ok" : "bad"}">${d >= 0 ? "+" : "−"}${fmt(Math.abs(d))}${u}</b></div>`; }).join("")}<div class="sub" style="margin-top:2px">삭제한 기록은 합계에서 제외돼요 · ${L.filter(r => !r.del).length}건</div></div>` : "";
+    $("#logList").innerHTML = L.slice(0, 200).map(r => `<div class="it ${r.del ? "del" : ""}"><div class="grow"><div><b class="${r.dir === "수입" ? "t-회수" : "t-불출"}">${r.dir}</b> ${esc(r.cat)} ${r.target ? `<span class="tag">${esc(r.target)}</span>` : ""} <span class="tag">${esc(r.acct)}</span></div><div class="sub">${esc(r.t)}${r.memo ? " · " + esc(r.memo) : ""}${r.del && r.delReason ? " · 삭제사유: " + esc(r.delReason) : ""}</div></div><div class="num">${r.dir === "수입" ? "+" : "−"}${fmt(r.amt)}</div><button class="sm ghost" onclick="editDate('f','${r.id}','${esc(r.t)}')">날짜</button><button class="sm ghost" onclick="delFund('${r.id}',${r.del})">${r.del ? "복구" : "삭제"}</button></div>`).join("") || `<div class="sub">조건에 맞는 기록이 없어요</div>`;
+    return;
   }
+  $("#fSum").innerHTML = "";
+  const L = D.recs.slice().reverse().filter(r => (!rItem || r.item === rItem) && (!q || r.name.includes(q) || r.memo.includes(q))).slice(0, 150);
+  $("#logList").innerHTML = L.map(r => `<div class="it ${r.del ? "del" : ""}"><div class="grow"><div><b class="t-${r.type}">${r.type}</b> ${esc(r.name || "")} ${r.role ? `<span class="tag">${esc(r.role)}</span>` : ""} <span class="tag">${esc(r.item)}</span></div><div class="sub">${esc(r.t)}${r.memo ? " · " + esc(r.memo) : ""}${r.del && r.delReason ? " · 삭제사유: " + esc(r.delReason) : ""}</div></div><div class="num">${fmt(r.qty)}</div><button class="sm ghost" onclick="editDate('r','${r.id}','${esc(r.t)}')">날짜</button><button class="sm ghost" onclick="delRec('${r.id}',${r.del})">${r.del ? "복구" : "삭제"}</button></div>`).join("") || `<div class="sub">기록 없음</div>`;
+}
+function editDate(kind, id, cur) {
+  const send = async v => { if (/^\d{4}-\d{2}-\d{2}$/.test(v || "") && v !== cur.slice(0, 10)) { const r = await write("edit", { kind, id, date: v }); if (r) toast("날짜 수정"); } };
+  const i = document.createElement("input"); i.type = "date"; i.value = cur.slice(0, 10);
+  i.style.cssText = "position:fixed;left:50%;top:40%;width:1px;height:1px;opacity:0.01";
+  document.body.appendChild(i);
+  i.onchange = () => { const v = i.value; i.remove(); send(v); };
+  setTimeout(() => i.remove(), 60000);
+  try { i.showPicker(); } catch (e) { i.remove(); send(prompt("날짜 (YYYY-MM-DD)", cur.slice(0, 10))); }
+}
+async function delRec(id, undo) {
+  if (undo) { await write("del", { id, undo: true }); return; }
+  const reason = prompt("삭제 사유를 적어 주세요"); if (reason === null) return;
+  if (!reason.trim()) return toast("사유를 적어야 삭제돼요", 1);
+  if (!confirm("이 기록을 삭제할까요? (복구 가능)")) return;
+  await write("del", { id, reason: reason.trim() });
 }
 
-// 휴지통 — 지운 공성 목록과 되돌리기
-let trashOpen = false;
-function toggleTrash() { trashOpen = !trashOpen; renderRecruit(); }
-function trashHTML() {
-  const t = (D.trash || []);
-  if (!t.length) return "";
-  const live = t.filter(x => x.state === "보관").length;
-  if (!trashOpen) return `<button class="sm ghost" style="width:100%;margin-top:8px" onclick="toggleTrash()">휴지통 ${live}건 — 잘못 지웠으면 여기서 되돌려요</button>`;
-  return `<button class="sm ghost" style="width:100%;margin-top:8px" onclick="toggleTrash()">휴지통 닫기</button>
-    <div class="list" style="margin-top:8px">` + t.map(x => `<div class="it">
-      <div class="grow"><b>${esc(x.title)}</b> <span class="sub">${esc(x.at)} · ${esc(x.dev || "?")} 기기</span>${x.state !== "보관" ? ` <span class="tag">${esc(x.state)}</span>` : ""}</div>
-      ${x.state === "보관" ? `<button class="sm ghost" onclick="restoreTrash('${x.id}','${esc(x.title)}')">되돌리기</button>` : ""}
-    </div>`).join("") + `</div>`;
-}
-async function restoreTrash(id, title) {
-  if (!confirm(`"${title}" 를 되돌릴까요?\n신청·점수·룹표기록이 그대로 돌아와요.`)) return;
-  const r = await write("trash_restore", { id });
-  if (r && r.ok) { groups = []; await load(); toast("되돌렸어요"); }
-}
 
-async function openRecruit() {
-  const title = $("#recTitle").value.trim(), date = $("#recDate").value || today();
-  if (!title) return toast("제목을 적어 주세요", 1);
-  const r = await write("recruit_open", { key: date + "|" + title, title, date });
-  if (r && r.ok) { $("#expTitle").value = title; toast("모집을 열었어요 — 링크를 공지방에 올리세요"); }
-}
-async function reopenRecruit() {
-  const r = D.recruit; if (!r) return;
-  const x = await write("recruit_open", { key: r.key, title: r.title, date: r.date });
-  if (x && x.ok) toast("다시 열었어요");
-}
-async function closeRecruit() {
-  if (!confirm("모집을 닫을까요?\n(이미 들어온 신청은 그대로 남아요)")) return;
-  const r = await write("recruit_close", {});
-  if (r && r.ok) toast("모집을 닫았어요");
-}
-// 신청 → 배치용 목록
-function loadSignups() {
-  const all = (D.signups || []).filter(x => x.status === "참여" || x.status === "오픈");
-  if (!all.length) return toast("아직 들어온 신청이 없어요", 1);
-  // 캐릭 미정 용병은 표에 안 넣고 "운전 가능한 용병" 칸으로 따로 빼요.
-  mercPool = all.filter(x => x.drv).map(x => ({ name: x.name, by: x.by || "" }));
-  const s = all.filter(x => !x.drv);
-  const seen = {};
-  parsed = s.filter(x => (seen[x.name] ? false : (seen[x.name] = true))).map(x => {
-    const ex = findRoster(x.name);
-    const detail = x.detail || (ex ? ex.detail : "");
-    return { name: x.name, group: jobOf(x.group || (ex ? ex.group : ""), detail), detail,
-             gwanmun: ex ? !!ex.gwanmun : false, kind: x.status === "오픈" ? "오픈" : "참여",
-             merc: !!x.merc, by: x.by || "" };
-  });
-  const bad = parsed.filter(p => !p.group).map(p => p.name);
-  const joinN = parsed.filter(p => p.kind === "참여").length, openN = parsed.filter(p => p.kind === "오픈").length;
-  const nm = k => parsed.filter(p => p.kind === k).map(p => esc(p.name)).join(", ");
-  $("#parsedInfo").innerHTML = `참여 ${joinN}명 · 오픈 ${openN}명` + (mercPool.length ? ` · 운전 용병 ${mercPool.length}명` : "") +
-    (joinN ? `<br><span class="sub">참여: ${nm("참여")}</span>` : "") +
-    (openN ? `<br><span class="sub">오픈: ${nm("오픈")}</span>` : "") +
-    (mercPool.length ? `<br><span class="sub">운전 용병: ${mercPool.map(m => esc(m.name) + (m.by ? `(${esc(m.by)})` : "")).join(", ")}</span>` : "") +
-    (bad.length ? `<br><span class="bad">직업을 모르는 ${bad.length}명은 대기 칸으로 가요: ${bad.slice(0, 10).map(esc).join(", ")}</span>` : "");
-  $("#addToRoster").classList.add("hide");
-  if (D.recruit && !$("#expTitle").value.trim()) $("#expTitle").value = D.recruit.title;
-  renderDrv();
-  toast(`${parsed.length}명 불러왔어요 — 자동 배치를 눌러주세요`);
-}
+/* ---------- 자금 ---------- */
+const CASTLES = ["백호", "현무", "청룡", "주작"];
+const ITEMS = D.items && D.items.length ? D.items : ["빨시", "맑시"];
+let rItem = "";
+const CAT_IN = ["성 수입", "은나무 판매", "어금니", "용무기", "포인트 정산", "기타"];
+const CAT_OUT = [...ITEMS.map(i => i + " 구매"), "방쿠 구매", "바돈구매", "어금니", "용무기", "포인트 정산", "기타"];
+const UNIT = { "문파자금": "전", "현금": "원" };
+let fmode = "수입", facct = "문파자금", fcat = "성 수입", fcastle = "", fcAcct = "문파자금", logMode = "r";
 
-// 배치를 유지한 채, 아직 표에 없는 신청자만 대기 칸으로 넣어요.
-async function addNewSignups() {
-  await load();
-  const s = (D.signups || []).filter(x => x.status === "참여" || x.status === "오픈");
-  if (!s.length) return toast("들어온 신청이 없어요", 1);
-  const have = {};
-  allPeople().forEach(p => have[p.name] = true);
-  mercPool.forEach(m => have[m.name] = true);
-  s.filter(x => x.drv && !have[x.name]).forEach(x => mercPool.push({ name: x.name, by: x.by || "" }));
-  const add = s.filter(x => !x.drv && !have[x.name]);
-  if (!add.length) { renderDrv(); return toast("새로 신청한 사람이 없어요"); }
-  add.forEach(x => {
-    const ex = findRoster(x.name);
-    const detail = x.detail || (ex ? ex.detail : "");
-    const p = { name: x.name, group: jobOf(x.group || (ex ? ex.group : ""), detail), detail,
-                gwanmun: ex ? !!ex.gwanmun : false, driver: "", opened: x.status === "오픈",
-                merc: !!x.merc, by: x.by || "" };
-    poolMembers.push(p);
-    if (x.status === "오픈" && !openers.some(o => o.name === x.name)) {
-      openers.push({ name: p.name, group: p.group, detail: p.detail, driver: "", merc: !!x.merc });
-    }
-  });
-  renderBoard(); renderDrv();
-  toast(`${add.length}명 추가했어요 — 대기 칸에서 표로 옮겨주세요: ${add.map(x => x.name).slice(0, 6).join(", ")}`);
+function parseAmt(s) {
+  s = String(s || "").replace(/[,\s전원]/g, "");
+  const m = s.match(/^(\d+(?:\.\d+)?)(억|만)?$/); if (!m) return 0;
+  return Math.round(Number(m[1]) * (m[2] === "억" ? 1e8 : m[2] === "만" ? 1e4 : 1));
 }
-
-function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
-function resetAll() {
-  if (!confirm("붙여넣은 목록과 지금 배치를 전부 지울까요?\n(저장해 둔 명단·룹장·점수는 그대로예요)")) return;
-  parsed = []; groups = []; poolMembers = []; openers = []; mercPool = []; mercPicked = null; picked = null; dragSrc = null;
-  $("#expTitle").value = "";
-  $("#parsedInfo").innerHTML = ""; $("#addToRoster").classList.add("hide");
-  renderBoard(); renderDrv();
-  toast("전부 지웠어요");
+function parseBar(s) {
+  s = String(s || "").replace(/[,\s]/g, "");
+  const m = s.match(/^(\d+(?:\.\d+)?)(억|만)?(원|전)?$/); if (!m) return 0;
+  const mul = m[2] === "억" ? 1e8 : m[2] === "만" ? 1e4 : m[3] ? 1 : 1e4;
+  return Math.round(Number(m[1]) * mul);
 }
-
-/* ---------- 자동 배치 ---------- */
-function blankRow(type) { return { type, people: new Array(NC).fill(null) }; }
-function newGroup(name) { return { name, rows: [blankRow("격수"), blankRow("도사")] }; }
-function fitRows() { groups.forEach(g => g.rows.forEach(r => {
-  if (r.people.length < NC) r.people = r.people.concat(new Array(NC - r.people.length).fill(null));
-  else if (r.people.length > NC) { r.people.slice(NC).forEach(p => { if (p) poolMembers.push(p); }); r.people = r.people.slice(0, NC); }
-})); }
-
-// 줄에 사람들을 왼쪽부터 채우고, 넘치면 같은 종류 줄을 더 만들어요.
-function fillInto(g, type, people) {
-  if (!people.length) return;
-  let idx = 0;
-  const useRow = () => {
-    let r = null;
-    for (let i = g.rows.length - 1; i >= 0; i--) if (g.rows[i].type === type) { r = g.rows[i]; break; }
-    if (!r || r.people.every(x => x)) { r = blankRow(type); insertRow(g, r); }
-    return r;
-  };
-  while (idx < people.length) {
-    const r = useRow();
-    for (let c = 0; c < NC && idx < people.length; c++) if (!r.people[c]) r.people[c] = people[idx++];
-  }
-}
-// 같은 종류 줄끼리 모여 있게 넣어요 (격수 줄 다음에 도사 줄)
-function insertRow(g, row) {
-  let last = -1;
-  g.rows.forEach((r, i) => { if (r.type === row.type) last = i; });
-  if (last < 0) g.rows.push(row); else g.rows.splice(last + 1, 0, row);
-}
-
-function autoArrange() {
-  if (!parsed.length) return toast("먼저 목록 인식을 해 주세요", 1);
-  const nRaw = prompt("룹을 몇 개로 나눌까요?", String(Math.max(1, groups.length || 3)));
-  if (nRaw === null) return;
-  const n = Math.max(1, Math.min(12, Number(nRaw) || 3));
-  poolMembers = []; groups = [];
-  openers = parsed.filter(p => p.kind === "오픈").map(p => ({ name: p.name, group: p.group, detail: p.detail, driver: "", merc: !!p.merc }));
-  const mk = p => ({ name: p.name, group: p.group, detail: p.detail, gwanmun: p.gwanmun, driver: "",
-                     opened: p.kind === "오픈", merc: !!p.merc, by: p.by || "" });
-  const gs = [], ds = [], js = [];
-  parsed.forEach(p => {
-    const m = mk(p);
-    if (isGyeoksu(p.group)) gs.push(m);
-    else if (p.group === "도사") ds.push(m);
-    else if (p.group === "주술사") js.push(m);
-    else poolMembers.push(m);
-  });
-  gs.sort((a, b) => (b.gwanmun ? 1 : 0) - (a.gwanmun ? 1 : 0));   // 공문 먼저 → 룹마다 흩어짐
-  for (let i = 0; i < n; i++) groups.push(newGroup((i + 1) + "룹"));
-  const split = (arr) => { const out = Array.from({ length: n }, () => []); arr.forEach((p, i) => out[i % n].push(p)); return out; };
-  const gg = split(gs), dd = split(ds), jj = split(js);
-  groups.forEach((g, i) => {
-    fillInto(g, "격수", gg[i]);
-    fillInto(g, "도사", dd[i]);
-    if (jj[i].length) fillInto(g, "주술사", jj[i]);   // 주술사가 있을 때만 줄을 만들어요
-  });
-  renderBoard(); renderDrv();
-  toast(`${n}개 룹으로 배치했어요 — 칸을 눌러 옮길 수 있어요`);
-}
-function addGroup() {
-  const nm = prompt("룹 이름", (groups.length + 1) + "룹");
-  if (nm === null) return;
-  groups.push(newGroup(nm.trim() || (groups.length + 1) + "룹"));
-  renderBoard();
-}
-function addRow(type) {
-  if (!groups.length) return toast("먼저 룹을 만들어 주세요", 1);
-  const nm = prompt(`어느 룹에 ${type} 줄을 넣을까요?\n(${groups.map(g => g.name).join(", ")})`, groups[groups.length - 1].name);
-  if (nm === null) return;
-  const g = groups.find(x => x.name === nm.trim()) || groups[groups.length - 1];
-  insertRow(g, blankRow(type));
-  renderBoard();
-}
-function delGroup(i) {
-  const g = groups[i]; if (!g) return;
-  const ppl = g.rows.flatMap(r => r.people.filter(Boolean));
-  if (ppl.length && !confirm(`${g.name}에 ${ppl.length}명이 있어요.\n대기 칸으로 옮기고 룹을 지울까요?`)) return;
-  poolMembers = poolMembers.concat(ppl);
-  groups.splice(i, 1); renderBoard();
-}
-function renameGroup(i) {
-  const nm = prompt("룹 이름", groups[i].name);
-  if (nm === null) return;
-  groups[i].name = nm.trim() || groups[i].name;
-  renderBoard();
-}
-function setCols() {
-  const v = prompt("한 줄에 몇 칸으로 할까요? (4~12)", String(NC));
-  if (v === null) return;
-  NC = Math.max(4, Math.min(12, Number(v) || 8));
-  fitRows(); renderBoard();
-}
-
-/* ---------- 운전자 지정 ---------- */
-function renderDrv() {
-  $("#drvCard").classList.toggle("hide", openers.length === 0 && mercPool.length === 0);
-  const mp = $("#mercPool");
-  if (mp) {
-    const used = {}; openers.forEach(o => { if (o.driver) used[o.driver.trim()] = true; });
-    mp.parentElement.classList.toggle("hide", mercPool.length === 0);
-    mp.innerHTML = mercPool.map((m, i) =>
-      `<div class="merc ${used[m.name] ? "used" : ""}" draggable="true" data-m="${i}" title="운전자 칸에 끌어다 놓거나, 눌렀다가 운전자 칸을 누르세요"><b>${esc(m.name)}</b>${m.by ? `<span class="detail">${esc(m.by)}</span>` : ""}</div>`).join("")
-      || `<span class="sub">없음</span>`;
-  }
-  if (!openers.length) { $("#drvList").innerHTML = ""; bindMerc(); return; }
-  $("#drvList").innerHTML = `<div class="drvrow sub" style="font-weight:600"><span>오픈한 캐릭</span><span>운전자</span><span>용병</span></div>` +
-    openers.map((o, i) => `<div class="drvrow">
-      <div>${esc(o.name)} ${o.detail ? `<span class="tag">${esc(o.detail)}</span>` : ""}</div>
-      <input value="${esc(o.driver)}" placeholder="운전자 캐릭명" data-d="${i}" oninput="setDriver(${i}, this.value)">
-      <label class="sub" style="display:flex;align-items:center;gap:4px"><input type="checkbox" ${o.merc ? "checked" : ""} onchange="openers[${i}].merc=this.checked" style="width:18px"> 용병</label>
-    </div>`).join("");
-  bindMerc();
-}
-// 용병 칩 → 운전자 칸: 드래그해도 되고, 칩을 누른 뒤 칸을 눌러도 돼요.
-let mercPicked = null;
-function putMerc(mi, di) {
-  const m = mercPool[mi]; if (!m || !openers[di]) return;
-  openers[di].merc = true;
-  setDriver(di, m.name);
-  mercPicked = null; renderDrv();
-  toast(`${openers[di].name} 운전 → ${m.name}`);
-}
-function bindMerc() {
-  document.querySelectorAll("#mercPool .merc").forEach(el => {
-    const mi = Number(el.dataset.m);
-    el.classList.toggle("picked", mercPicked === mi);
-    el.addEventListener("dragstart", e => { mercPicked = mi; e.dataTransfer.effectAllowed = "copy"; e.dataTransfer.setData("text/plain", mercPool[mi].name); });
-    el.addEventListener("click", () => { mercPicked = (mercPicked === mi ? null : mi); renderDrv(); });
-  });
-  document.querySelectorAll("#drvList input[data-d]").forEach(inp => {
-    const di = Number(inp.dataset.d);
-    inp.addEventListener("dragover", e => { if (mercPicked !== null) { e.preventDefault(); inp.classList.add("over"); } });
-    inp.addEventListener("dragleave", () => inp.classList.remove("over"));
-    inp.addEventListener("drop", e => { e.preventDefault(); inp.classList.remove("over"); if (mercPicked !== null) putMerc(mercPicked, di); });
-    inp.addEventListener("focus", () => { if (mercPicked !== null) putMerc(mercPicked, di); });
-  });
-}
-// 대기 칸 색깔용: 전사/도적=격수, 도사, 주술사, 나머지
-function jobClass(g) { return isGyeoksu(g) ? "G" : g === "도사" ? "D" : g === "주술사" ? "J" : "X"; }
-function allPeople() { return groups.flatMap(g => g.rows.flatMap(r => r.people.filter(Boolean))).concat(poolMembers); }
-function setDriver(i, v) {
-  openers[i].driver = v;
-  const nm = openers[i].name;
-  allPeople().forEach(m => { if (m.name === nm) m.driver = v; });
-  renderBoard();
-}
-
-/* ---------- 표 렌더 ---------- */
-// 보이는 형태: 캐릭명(직업)(운전자)  — 시트에서 쓰던 표기 그대로
-function cellHTML(p, gi, ri, ci) {
-  const sel = picked && picked.g === gi && picked.r === ri && picked.c === ci;
-  const par = [p.detail, p.driver].filter(Boolean).map(x => `(${esc(x)})`).join("");
-  const mc = p.merc ? `<span class="drv">용병${p.by ? " " + esc(p.by) : ""}</span>` : "";
-  return `<span class="cell ${p.gwanmun ? "gwanmun" : ""} ${sel ? "picked" : ""}" draggable="true">${esc(p.name)}<span class="detail">${par}</span>${mc}</span>`;
-}
-function renderBoard() {
-  poolMembers = poolMembers.filter((p, i, a) => p && a.findIndex(x => x.name === p.name) === i);
-  $("#pool").classList.toggle("hide", groups.length === 0 && poolMembers.length === 0);
-  $("#poolSlots").innerHTML = poolMembers.length
-    ? poolMembers.map((p, i) => `<div class="person j${esc(jobClass(p.group))} ${p.gwanmun ? "gwanmun" : ""} ${picked && picked.g === "pool" && picked.c === i ? "picked" : ""}" draggable="true" data-i="${i}"><b>${esc(p.name)}</b><span class="detail">${esc(p.detail || "")}</span>${p.merc ? `<span class="drv">용병</span>` : ""}</div>`).join("")
-    : `<span class="sub">비어 있음 — 표에서 뺄 사람을 여기로 옮기면 돼요</span>`;
-
-  if (!groups.length) {
-    $("#board").innerHTML = `<div class="sub" style="padding:8px 4px">목록을 인식하고 자동 배치를 눌러주세요.</div>`;
-    $("#colInfo").textContent = ""; bindDnd(); return;
-  }
-  fitRows();
-  let h = `<table class="rt">`;
-  groups.forEach((g, gi) => {
-    const col = GCOLORS[gi % GCOLORS.length];
-    g.rows.forEach((r, ri) => {
-      h += `<tr class="t${r.type}">`;
-      if (ri === 0) h += `<td class="gname" rowspan="${g.rows.length}" style="background:${col}" onclick="groupMenu(${gi})">${esc(g.name)}</td>`;
-      const sameAsPrev = ri > 0 && g.rows[ri - 1].type === r.type;
-      if (!sameAsPrev) {
-        let span = 1;
-        for (let k = ri + 1; k < g.rows.length && g.rows[k].type === r.type; k++) span++;
-        h += `<td class="rlabel" rowspan="${span}" onclick="rowMenu(${gi},${ri})">${r.type}</td>`;
-      }
-      for (let c = 0; c < NC; c++) {
-        const p = r.people[c];
-        h += `<td class="drop" data-g="${gi}" data-r="${ri}" data-c="${c}">${p ? cellHTML(p, gi, ri, c) : ""}</td>`;
-      }
-      h += `</tr>`;
-    });
-  });
-  h += `</table>`;
-  $("#board").innerHTML = h;
-  const tot = allPeople().length - poolMembers.length;
-  $("#colInfo").textContent = `룹 ${groups.length}개 · ${NC}칸 · 배치 ${tot}명` + (poolMembers.length ? ` · 대기 ${poolMembers.length}명` : "");
-  bindDnd();
-}
-function groupMenu(gi) {
-  const a = prompt(`"${groups[gi].name}"\n1 = 이름 바꾸기\n2 = 룹 지우기\n(취소하려면 비우고 확인)`, "");
-  if (a === null) return;
-  if (a.trim() === "1") renameGroup(gi);
-  else if (a.trim() === "2") delGroup(gi);
-}
-function rowMenu(gi, ri) {
-  const g = groups[gi], r = g.rows[ri];
-  const n = r.people.filter(Boolean).length;
-  if (!confirm(`${g.name}의 "${r.type}" 줄을 지울까요?` + (n ? `\n${n}명은 대기 칸으로 가요.` : ""))) return;
-  poolMembers = poolMembers.concat(r.people.filter(Boolean));
-  g.rows.splice(ri, 1);
-  if (!g.rows.length) groups.splice(gi, 1);
-  renderBoard();
-}
-
-/* ---------- 옮기기 (드래그 + 탭) ---------- */
-let dragSrc = null, picked = null;
-function getAt(loc) { return loc.g === "pool" ? poolMembers[loc.c] : groups[loc.g].rows[loc.r].people[loc.c]; }
-function setAt(loc, p) {
-  if (loc.g === "pool") { if (p) poolMembers.push(p); return; }
-  groups[loc.g].rows[loc.r].people[loc.c] = p || null;
-}
-function moveTo(src, dst) {
-  if (src.g === dst.g && src.r === dst.r && src.c === dst.c) { picked = null; renderBoard(); return; }
-  const a = getAt(src), b = getAt(dst);
-  if (!a) { picked = null; renderBoard(); return; }
-  if (src.g === "pool") poolMembers.splice(src.c, 1); else setAt(src, null);
-  if (dst.g === "pool") { poolMembers.push(a); }
-  else {
-    setAt(dst, a);
-    if (b) { if (src.g === "pool") poolMembers.push(b); else setAt(src, b); }   // 자리가 차 있으면 서로 바꿔요
-  }
-  picked = null; dragSrc = null;
-  renderBoard();
-}
-function bindDnd() {
-  document.querySelectorAll("#board td.drop").forEach(td => {
-    const loc = { g: Number(td.dataset.g), r: Number(td.dataset.r), c: Number(td.dataset.c) };
-    const cell = td.querySelector(".cell");
-    if (cell) {
-      cell.addEventListener("dragstart", e => { dragSrc = loc; e.dataTransfer.effectAllowed = "move"; });
-      cell.addEventListener("click", e => {
-        e.stopPropagation();
-        picked = (picked && picked.g === loc.g && picked.r === loc.r && picked.c === loc.c) ? null : loc;
-        renderBoard();
-      });
-    }
-    td.addEventListener("dragover", e => { e.preventDefault(); td.classList.add("over"); });
-    td.addEventListener("dragleave", () => td.classList.remove("over"));
-    td.addEventListener("drop", e => { e.preventDefault(); td.classList.remove("over"); if (dragSrc) moveTo(dragSrc, loc); });
-    td.addEventListener("click", () => { if (picked) moveTo(picked, loc); });
-  });
-  document.querySelectorAll("#poolSlots .person").forEach(el => {
-    const loc = { g: "pool", r: 0, c: Number(el.dataset.i) };
-    el.addEventListener("dragstart", e => { dragSrc = loc; e.dataTransfer.effectAllowed = "move"; });
-    el.addEventListener("click", e => {
-      e.stopPropagation();
-      picked = (picked && picked.g === "pool" && picked.c === loc.c) ? null : loc;
-      renderBoard();
-    });
-  });
-  const ps = $("#poolSlots");
-  ps.addEventListener("dragover", e => { e.preventDefault(); ps.classList.add("over"); });
-  ps.addEventListener("dragleave", () => ps.classList.remove("over"));
-  ps.addEventListener("drop", e => { e.preventDefault(); ps.classList.remove("over"); if (dragSrc) moveTo(dragSrc, { g: "pool", r: 0, c: -1 }); });
-  ps.addEventListener("click", () => { if (picked) moveTo(picked, { g: "pool", r: 0, c: -1 }); });
-  $("#pickHint").classList.toggle("hide", !picked);
-}
-
-function boardTitle() { return $("#expTitle").value.trim() || `${today()} 공성 룹표`; }
-function siegeKey() { return today() + "|" + boardTitle(); }
-// 시트에 사람이 읽을 수 있는 표로 남겨요 (점수가 안 맞을 때 그날 배치를 보려고)
-function boardGrid() {
-  const show = p => p ? p.name + [p.detail, p.driver].filter(Boolean).map(x => `(${x})`).join("") + (p.merc ? `[용병${p.by ? "·" + p.by : ""}]` : "") : "";
-  const g = [];
-  groups.forEach(grp => {
-    grp.rows.forEach((r, i) => {
-      g.push([i === 0 ? grp.name : "", r.type].concat(r.people.map(show)));
-    });
-  });
-  if (poolMembers.length) g.push(["대기", "", ...poolMembers.map(show)]);
-  if (openers.length) {
-    g.push(["오픈", "운전자", ...openers.map(o => `${o.name} → ${o.driver || "(미정)"}${o.merc ? " [용병]" : ""}`)]);
-  }
-  if (mercPool.length) {
-    g.push(["용병", "운전대기", ...mercPool.map(m => m.name + (m.by ? `(${m.by})` : ""))]);
-  }
-  // 오른쪽 빈 칸 잘라내기
-  let w = 0; g.forEach(r => { for (let i = r.length - 1; i >= 0; i--) if (String(r[i]).trim()) { w = Math.max(w, i + 1); break; } });
-  return g.map(r => r.slice(0, Math.max(3, w)));
-}
-async function saveBoard(force) {
-  if (!groups.length) return toast("배치된 내용이 없어요", 1);
-  const r = await write("board_save", {
-    board: { title: boardTitle(), groups, nc: NC, pool: poolMembers, openers, mercs: mercPool, savedAt: today() },
-    key: siegeKey(), grid: boardGrid(), base: revN("룹표"), force: !!force
-  });
-  if (r && !r.ok && r.error === "stale") {
-    if (askOverwrite(r, "룹표")) return saveBoard(true);
-    groups = []; await load();   // 서버에 저장된 최신 룹표로 갈아끼워요
-    return toast("최신 룹표를 불러왔어요");
-  }
-  if (r && r.ok) toast("룹표를 저장했어요 (시트에도 표로 남았어요)");
-}
-
-async function exportPng() {
-  if (!groups.length) return toast("배치된 내용이 없어요", 1);
-  try { if (!window.html2canvas) await loadScript("html2canvas.min.js"); }
-  catch (e) { return toast("이미지 기능을 불러오지 못했어요", 1); }
-  const wrap = document.createElement("div");
-  const bg = getComputedStyle(document.body).backgroundColor, fg = getComputedStyle(document.body).color;
-  wrap.style.cssText = `position:fixed;left:-9999px;top:0;padding:20px;background:${bg};display:inline-block`;
-  wrap.innerHTML = `<div style="font-size:22px;font-weight:800;margin-bottom:12px;color:${fg}">${esc(boardTitle())}</div>${$("#board").innerHTML}`;
-  wrap.querySelectorAll(".cell").forEach(c => c.classList.remove("picked"));
-  // 그림에서는 오른쪽 빈 칸을 잘라내요
-  const trs = [...wrap.querySelectorAll("table.rt tr")];
-  let lastUsed = -1;
-  trs.forEach(tr => {
-    const ds = [...tr.querySelectorAll("td.drop")];
-    ds.forEach((td, i) => { if (td.textContent.trim()) lastUsed = Math.max(lastUsed, i); });
-  });
-  if (lastUsed >= 0) trs.forEach(tr => [...tr.querySelectorAll("td.drop")].forEach((td, i) => { if (i > lastUsed) td.remove(); }));
-  document.body.appendChild(wrap);
-  try {
-    const canvas = await html2canvas(wrap, { backgroundColor: bg, scale: 2 });
-    const a = document.createElement("a"); a.download = `${today()}_룹표.png`; a.href = canvas.toDataURL("image/png"); a.click();
-    toast("이미지를 저장했어요");
-  } catch (e) { toast("이미지 저장 실패", 1); } finally { wrap.remove(); }
-}
-
-/* ---------- 점수 적립 ---------- */
-// 운전자(실제 플레이) = 참여 점수, 캐릭 빌려준 사람(오픈자) = 오픈 점수.
-// 본인이 오픈하고 본인이 운전하면 둘 다 받아요.
-function buildAccrual() {
-  const jp = Number(D.settings["참여점수"]) || 0, op = Number(D.settings["오픈점수"]) || 0;
-  const rows = [], skipped = [];
-  const all = groups.flatMap(g => g.rows.flatMap(r => r.people.filter(Boolean)));
-  all.forEach(m => {
-    const o = openers.find(x => x.name === m.name);
-    if (o) {
-      if (op) rows.push({ name: m.name, kind: "오픈", pts: op, reason: "아이디 오픈", merc: false });
-      const drv = (o.driver || "").trim();
-      if (drv) { if (jp) rows.push({ name: drv, kind: "참여", pts: jp, reason: `${m.name} 운전`, merc: !!o.merc }); }
-      else skipped.push(m.name);
-    } else if (jp) {
-      rows.push({ name: m.name, kind: "참여", pts: jp, reason: m.merc ? ("용병 참여" + (m.by ? " · " + m.by : "")) : "직접 참여", merc: !!m.merc });
-    }
-  });
-  return { rows, skipped };
-}
-async function accrue() {
-  if (!groups.length) return toast("배치된 내용이 없어요", 1);
-  const { rows, skipped } = buildAccrual();
-  if (!rows.length) return toast("적립할 내용이 없어요 (점수 설정을 확인해 주세요)", 1);
-  const key = siegeKey();
-  const join = rows.filter(r => r.kind === "참여"), open = rows.filter(r => r.kind === "오픈"), merc = rows.filter(r => r.merc);
-  let msg = `${boardTitle()}\n\n참여 ${join.length}명 · 오픈 ${open.length}명`;
-  if (merc.length) msg += `\n(참여 중 용병 ${merc.length}명)`;
-  if (skipped.length) msg += `\n\n운전자가 비어 있어 빠지는 캐릭 ${skipped.length}개:\n${skipped.slice(0, 8).join(", ")}${skipped.length > 8 ? " 외" : ""}`;
-  if (!confirm(msg + "\n\n점수를 적립할까요?")) return;
-  let r = await write("score_add", { rows, key, date: today() });
-  if (r && !r.ok && r.error === "dup") {
-    if (!confirm("이 날짜·제목으로 이미 적립했어요.\n그래도 한 번 더 적립할까요? (점수가 두 번 들어가요)")) return;
-    r = await write("score_add", { rows, key, date: today(), force: true });
-  }
-  if (r && r.ok) {
-    // 적립 시점의 배치를 시트에 그대로 남겨둬요
-    await write("board_save", { board: { title: boardTitle(), groups, nc: NC, pool: poolMembers, openers, savedAt: today() }, key, grid: boardGrid() });
-    go("s-score"); toast(`적립 완료 — ${rows.length}건 (시트에 배치도 남겼어요)`);
-  }
-}
-
-/* ---------- 점수 탭 ---------- */
-let scKind = "";
-function renderScoreTab() {
-  $("#setJoin").value = D.settings["참여점수"] ?? 1;
-  $("#setOpen").value = D.settings["오픈점수"] ?? 1;
-  // 공성(공성키)별로 묶어서 보여줘요
-  const byKey = {};
-  (D.scores || []).forEach(s => {
-    if (!s.key) return;
-    const k = byKey[s.key] || (byKey[s.key] = { key: s.key, live: 0, del: 0, pts: 0, ids: [] });
-    if (s.del) k.del++; else { k.live++; k.pts += s.pts; k.ids.push(s.id); }
-  });
-  const ks = Object.values(byKey).reverse();
-  $("#keyList").innerHTML = ks.length ? ks.map(k => `<div class="it">
-      <div class="grow"><div><b>${esc(k.key.split("|").slice(1).join("|") || k.key)}</b></div>
-      <div class="sub">${esc(k.key.split("|")[0])} · ${k.live}건 / ${fmt(k.pts)}점${k.del ? ` · 취소됨 ${k.del}건` : ""}</div></div>
-      ${k.live ? `<button class="sm ghost" onclick="cancelKey('${esc(k.key)}')">적립 취소</button>` : `<span class="tag">취소됨</span>`}
-    </div>`).join("") : `<div class="sub">아직 공성 적립 기록이 없어요</div>`;
-
-  const t = Object.entries(D.totals || {}).sort((a, b) => b[1] - a[1]);
-  $("#rankList").innerHTML = t.length
-    ? t.map(([n, v], i) => `<div class="it"><span class="sub">${i + 1}</span><div>${esc(n)}</div><div class="num" style="text-align:right">${fmt(v)}점</div></div>`).join("")
-    : `<div class="sub">아직 점수가 없어요</div>`;
-  chips("#scFilter", ["전체", ...D.kinds], scKind || "전체", v => { scKind = v === "전체" ? "" : v; renderScores(); });
-  renderScores();
+function man(n) { return Math.abs(n) >= 10000 ? "(" + (n / 10000).toLocaleString("ko-KR", { maximumFractionDigits: 2 }) + "만)" : ""; }
+function fcLine(acct) {
+  const c = D.fchecks.filter(x => x.acct === acct).pop();
+  return c ? ` · 검산 ${c.diff === 0 ? "일치" : "차이 " + (c.diff > 0 ? "+" : "") + fmt(c.diff)}` : "";
 }
 function chips(id, arr, cur, fn) {
   $(id).innerHTML = arr.map(v => `<button class="chip ${v === cur ? "on" : ""}" data-v="${esc(v)}">${esc(v)}</button>`).join("");
   $(id).querySelectorAll("button").forEach(b => b.onclick = () => fn(b.dataset.v));
 }
-function renderScores() {
-  const q = $("#scQ").value.trim();
-  const L = D.scores.slice().reverse().filter(s => (!scKind || s.kind === scKind) && (!q || s.name.includes(q) || s.reason.includes(q))).slice(0, 200);
-  $("#scList").innerHTML = L.map(s => `<div class="it ${s.del ? "del" : ""}">
-    <div class="grow">
-      <div><b>${esc(s.name)}</b> <span class="tag">${esc(s.kind)}</span>${s.merc ? ` <span class="tag">용병</span>` : ""}</div>
-      <div class="sub">${esc(s.t)}${s.reason ? " · " + esc(s.reason) : ""}${s.dev ? " · " + esc(s.dev) : ""}${s.del && s.delReason ? " · 삭제사유: " + esc(s.delReason) : ""}</div>
-    </div>
-    <div class="num ${s.pts < 0 ? "bad" : "ok"}">${s.pts > 0 ? "+" : ""}${fmt(s.pts)}</div>
-    <button class="sm ghost" onclick="editScore('${s.id}','${esc(s.t)}',${s.pts})">수정</button>
-    <button class="sm ghost" onclick="delScore('${s.id}',${s.del})">${s.del ? "복구" : "삭제"}</button>
-  </div>`).join("") || `<div class="sub">기록 없음</div>`;
+function renderFund() {
+  chips("#fmodeChips", ["수입", "지출", "바돈구매", "품목구매", "기초잔액"], fmode, v => { fmode = v; if (v === "수입") fcat = "성 수입"; else if (v === "지출") fcat = "빨시 구매"; renderFund(); });
+  $("#fMain").classList.toggle("hide", fmode !== "수입" && fmode !== "지출");
+  $("#fBase").classList.toggle("hide", fmode !== "기초잔액");
+  $("#fBar").classList.toggle("hide", fmode !== "바돈구매");
+  $("#fBuy").classList.toggle("hide", fmode !== "품목구매");
+  if (fmode === "품목구매") chips("#buyItemChips", ITEMS, buyItem, v => { buyItem = v; renderFund(); });
+  if (fmode === "수입" || fmode === "지출") {
+    chips("#acctChips", ["문파자금", "현금"], facct, v => { facct = v; renderFund(); });
+    const cats = fmode === "수입" ? CAT_IN : CAT_OUT;
+    if (cats.indexOf(fcat) < 0) fcat = cats[0];
+    chips("#catChips", cats, fcat, v => { fcat = v; renderFund(); });
+    const isC = fmode === "수입" && fcat === "성 수입";
+    $("#castleRow").classList.toggle("hide", !isC);
+    if (isC) chips("#castleChips", CASTLES, fcastle, v => { fcastle = v; renderFund(); });
+    $("#fTarget").classList.toggle("hide", isC);
+  }
+  fPrev();
 }
-// 한 공성의 적립을 통째로 취소해요 (테스트 정리, 잘못 적립 되돌리기)
-async function cancelKey(key) {
-  const ids = (D.scores || []).filter(s => s.key === key && !s.del).map(s => s.id);
-  if (!ids.length) return toast("취소할 게 없어요", 1);
-  const reason = prompt(`"${key}" 적립 ${ids.length}건을 취소해요.\n사유를 적어 주세요`, "테스트 정리");
-  if (reason === null) return;
-  if (!reason.trim()) return toast("사유를 적어야 취소돼요", 1);
-  if (!confirm(`${ids.length}건을 취소할까요?\n(기록은 남고 합계에서만 빠져요)`)) return;
-  const r = await write("score_del", { ids, reason: reason.trim() });
-  if (r && r.ok) toast(`${ids.length}건 취소했어요`);
+function fPrev() {
+  const a = parseAmt($("#fAmt").value); $("#fAmtP").textContent = a ? fmt(a) + UNIT[facct] + " " + man(a) : "";
+  const c = parseBar($("#bCash").value), g = parseBar($("#bGold").value);
+  $("#bP").textContent = (c || g) ? `현금 −${fmt(c)}원 / 문파자금 +${fmt(g)}전 ${man(g)}` : "";
+  const bg = parseAmt($("#baseG").value), bc = parseAmt($("#baseC").value);
+  $("#baseP").textContent = (bg || bc) ? `문파자금 ${fmt(bg)}전 ${man(bg)} / 현금 ${fmt(bc)}원 ${man(bc)}` : "";
+  const q = Number($("#yQty").value) || 0, u = parseAmt($("#yUnit").value);
+  $("#yP").textContent = (q && u) ? `${buyItem} 합계 ${fmt(q * u)}전 ${man(q * u)}` : "";
 }
-async function saveSettings() {
-  const r = await write("settings_save", { settings: { "참여점수": Number($("#setJoin").value) || 0, "오픈점수": Number($("#setOpen").value) || 0 } });
-  if (r && r.ok) toast("설정을 저장했어요");
+async function submitFund() {
+  const memo = $("#fMemo").value.trim(); let payload, sum;
+  if (fmode === "수입" || fmode === "지출") {
+    const amt = parseAmt($("#fAmt").value); if (!amt) return toast("금액을 확인해 주세요", 1);
+    let target = $("#fTarget").value.trim();
+    if (fmode === "수입" && fcat === "성 수입") { if (!fcastle) return toast("성을 골라 주세요", 1); target = fcastle; }
+    payload = { funds: [{ acct: facct, dir: fmode, cat: fcat, amt, target, memo }] };
+    sum = `${facct} ${fmode} · ${fcat}${target ? " (" + target + ")" : ""}\n${fmt(amt)}${UNIT[facct]}`;
+  } else if (fmode === "기초잔액") {
+    const bg = parseAmt($("#baseG").value), bc = parseAmt($("#baseC").value); if (!bg && !bc) return toast("금액을 하나 이상 적어 주세요", 1);
+    const f = []; if (bg) f.push({ acct: "문파자금", dir: "수입", cat: "기초 잔액", amt: bg, memo }); if (bc) f.push({ acct: "현금", dir: "수입", cat: "기초 잔액", amt: bc, memo });
+    payload = { funds: f };
+    sum = `기초 잔액` + (bg ? `\n문파자금 ${fmt(bg)}전` : "") + (bc ? `\n현금 ${fmt(bc)}원` : "");
+  } else if (fmode === "바돈구매") {
+    const c = parseBar($("#bCash").value), g = parseBar($("#bGold").value); if (!c || !g) return toast("현금과 전 금액을 모두 적어 주세요", 1);
+    payload = { funds: [{ acct: "현금", dir: "지출", cat: "바돈구매", amt: c, memo }, { acct: "문파자금", dir: "수입", cat: "바돈구매", amt: g, memo }] };
+    sum = `바돈구매 · 현금 −${fmt(c)}원 / 문파자금 +${fmt(g)}전`;
+  } else {
+    const q = Number($("#yQty").value) || 0, u = parseAmt($("#yUnit").value); if (!q || !u) return toast("개수와 가격을 확인해 주세요", 1);
+    const m = `개당 ${fmt(u)}전` + (memo ? " · " + memo : "");
+    payload = { rows: [{ type: "입고", name: "", qty: q, memo: "구매 " + m, item: buyItem }], funds: [{ acct: "문파자금", dir: "지출", cat: buyItem + " 구매", amt: q * u, memo: `${buyItem} ${fmt(q)}개 · ` + m }] };
+    sum = `${buyItem} ${fmt(q)}개 구매 · 문파자금 −${fmt(q * u)}전`;
+  }
+  if (!confirm(sum + "\n저장할까요?")) return;
+  payload.date = $("#fDate").value; const r = await write("add", payload);
+  if (r) { $("#fDate").value = today(); ["#fAmt", "#fTarget", "#fMemo", "#bCash", "#bGold", "#yQty", "#yUnit", "#baseG", "#baseC"].forEach(s => $(s).value = ""); fcastle = ""; renderFund(); toast("저장했어요"); }
 }
-async function manualScore() {
-  const name = $("#mName").value.trim(), pts = Number($("#mPts").value), reason = $("#mReason").value.trim();
-  if (!name) return toast("대상 캐릭명을 적어 주세요", 1);
-  if (!pts) return toast("점수를 적어 주세요 (차감은 -3 처럼)", 1);
-  if (!confirm(`${name}  ${pts > 0 ? "+" : ""}${pts}점\n${reason || "(사유 없음)"}\n\n기록할까요?`)) return;
-  const r = await write("score_add", { rows: [{ name, kind: pts < 0 ? "차감" : "기타", pts, reason }], date: today() });
-  if (r && r.ok) { $("#mName").value = ""; $("#mPts").value = ""; $("#mReason").value = ""; toast("기록했어요"); }
-}
-async function delScore(id, undo) {
-  if (undo) { await write("score_del", { id, undo: true }); return; }
+async function delFund(id, undo) {
+  if (undo) { await write("fdel", { id, undo: true }); return; }
   const reason = prompt("삭제 사유를 적어 주세요"); if (reason === null) return;
   if (!reason.trim()) return toast("사유를 적어야 삭제돼요", 1);
-  await write("score_del", { id, reason: reason.trim() });
+  if (!confirm("이 기록을 삭제할까요? (복구 가능)")) return;
+  await write("fdel", { id, reason: reason.trim() });
 }
-async function editScore(id, cur, pts) {
-  const d = prompt("날짜 (YYYY-MM-DD)", cur.slice(0, 10)); if (d === null) return;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return toast("날짜 형식을 확인해 주세요", 1);
-  const p = prompt("점수", String(pts)); if (p === null) return;
-  const r = await write("score_edit", { id, date: d, pts: Number(p) || pts });
-  if (r && r.ok) toast("수정했어요");
+function setLog(m) { logMode = m; $("#lgR").classList.toggle("on", m === "r"); $("#lgF").classList.toggle("on", m === "f"); renderLog(); }
+async function submitFCheck() {
+  const v = parseAmt($("#fcQ").value); if (!v) return toast("보고 금액을 적어 주세요", 1);
+  const r = await write("fcheck", { acct: fcAcct, reported: v, memo: $("#fcM").value.trim() });
+  if (r) { $("#fcQ").value = ""; $("#fcM").value = ""; toast("검산 기록"); }
 }
 
-/* ---------- 명단 ---------- */
-function drawRosterTbl() {
-  if (!RE.length || RE._src !== D.roster) { RE = D.roster.map(p => ({ ...p })); RE._src = D.roster; }
-  $("#rosterTbl").innerHTML = `<div class="it sub" style="font-weight:600"><span>캐릭명</span><span>직업군</span><span>세부직업</span><span>공문</span><span></span></div>` +
-    RE.map((p, i) => `<div class="it">
-      <input value="${esc(p.name)}" oninput="RE[${i}].name=this.value">
-      <select onchange="RE[${i}].group=this.value">${D.groups.map(g => `<option value="${g}" ${p.group === g ? "selected" : ""}>${g}</option>`).join("")}</select>
-      <input value="${esc(p.detail || "")}" oninput="RE[${i}].detail=this.value">
-      <input type="checkbox" ${p.gwanmun ? "checked" : ""} onchange="RE[${i}].gwanmun=this.checked" style="width:20px">
-      <button class="sm ghost" onclick="RE.splice(${i},1);drawRosterTbl()">✕</button>
-    </div>`).join("");
+/* ---------- 관리 ---------- */
+function renderAdmin() {
+  if (!R.length || R._src !== D.roster) { R = D.roster.map(p => ({ ...p })); R._src = D.roster; }
+  drawRoster();
+  chips("#ckItemChips", ITEMS, ckItem, v => { ckItem = v; renderAdmin(); });
+  chips("#fcAcct", ["문파자금", "현금"], fcAcct, v => { fcAcct = v; renderAdmin(); });
+  $("#fcList").innerHTML = D.fchecks.slice(-5).reverse().map(c => `<div class="it"><div class="grow"><div>${esc(c.t.slice(5))} · ${esc(c.acct)} · 보고 ${fmt(c.reported)} / 계산 ${fmt(c.calc)}</div><div class="sub">${esc(c.memo)}</div></div><b class="${c.diff === 0 ? "ok" : "bad"}">${c.diff === 0 ? "일치" : (c.diff > 0 ? "+" : "") + fmt(c.diff)}</b></div>`).join("");
+  $("#chkList").innerHTML = D.checks.filter(c => (c.item || "빨시") === ckItem).slice(-5).reverse().map(c => `<div class="it"><div class="grow"><div>${esc(c.t.slice(5))} · ${esc(c.item)} · 보고 ${fmt(c.reported)} / 계산 ${fmt(c.calc)}</div><div class="sub">${esc(c.memo)}</div></div><b class="${c.diff === 0 ? "ok" : "bad"}">${c.diff === 0 ? "일치" : (c.diff > 0 ? "+" : "") + fmt(c.diff)}</b></div>`).join("");
 }
-function addRosterRow() { RE.push({ name: "", group: D.groups[0], detail: "", gwanmun: false }); drawRosterTbl(); }
-function pushNewToRoster() {
-  if (!RE.length || RE._src !== D.roster) { RE = D.roster.map(p => ({ ...p })); RE._src = D.roster; }
-  let n = 0;
-  parsed.forEach(p => { if (!RE.some(x => x.name === p.name)) { RE.push({ name: p.name, group: p.group || D.groups[0], detail: p.detail || "", gwanmun: false }); n++; } });
-  go("s-roster");
-  toast(n ? `${n}명 추가했어요 — 확인 후 명단 저장을 눌러주세요` : "추가할 사람이 없어요");
+function drawRoster() {
+  $("#rosterEd").innerHTML = R.map((p, i) => `<div class="row" style="margin-bottom:6px"><input value="${esc(p.name)}" placeholder="캐릭명" oninput="R[${i}].name=this.value"><input value="${esc(p.role)}" placeholder="직책" oninput="R[${i}].role=this.value"><button class="sm ghost" onclick="R.splice(${i},1);drawRoster()">✕</button></div>`).join("") || `<div class="sub">명단이 비었어요</div>`;
 }
-async function saveRoster(force) {
-  const list = RE.map(p => ({ name: p.name.trim(), group: p.group, detail: (p.detail || "").trim(), gwanmun: !!p.gwanmun })).filter(p => p.name);
+function addRow() { R.push({ name: "", role: "", memo: "" }); drawRoster(); }
+async function saveRoster() {
+  const list = R.map(p => ({ name: p.name.trim(), role: p.role.trim(), memo: p.memo || "" })).filter(p => p.name);
   if (new Set(list.map(p => p.name)).size !== list.length) return toast("이름이 중복돼요", 1);
-  const r = await write("roster_save", { list, base: revN("명단"), force: !!force });
-  if (r && !r.ok && r.error === "stale") {
-    if (askOverwrite(r, "명단")) return saveRoster(true);
-    RE = []; await load(); drawRosterTbl(); return toast("최신 명단을 불러왔어요");
-  }
-  if (r && r.ok) { RE = []; drawRosterTbl(); toast("명단 저장"); }
+  const r = await write("roster", { list }); if (r) { R = []; renderAdmin(); toast("명단 저장"); }
+}
+async function submitCheck() {
+  const v = $("#chkQ").value; if (v === "") return toast("보고 수량을 적어 주세요", 1);
+  const r = await write("check", { item: ckItem, reported: Number(v), memo: $("#chkM").value.trim() });
+  if (r) { $("#chkQ").value = ""; $("#chkM").value = ""; toast("검산 기록"); }
 }
 
-/* ---------- 룹장 ---------- */
-function drawLeaderTbl() {
-  if (!LE.length || LE._src !== D.leaders) { LE = D.leaders.map(p => ({ ...p })); LE._src = D.leaders; }
-  $("#leaderTbl").innerHTML = `<div class="it sub" style="font-weight:600"><span>이름</span><span>구역</span><span></span></div>` +
-    LE.map((p, i) => `<div class="it">
-      <input value="${esc(p.name)}" oninput="LE[${i}].name=this.value">
-      <select onchange="LE[${i}].zone=this.value"><option value="격수" ${p.zone === "격수" ? "selected" : ""}>격수</option><option value="도사" ${p.zone === "도사" ? "selected" : ""}>도사</option></select>
-      <button class="sm ghost" onclick="LE.splice(${i},1);drawLeaderTbl()">✕</button>
-    </div>`).join("");
-}
-function addLeaderRow() { LE.push({ name: "", zone: "격수" }); drawLeaderTbl(); }
-async function saveLeaders(force) {
-  const list = LE.map(p => ({ name: p.name.trim(), zone: p.zone })).filter(p => p.name);
-  const r = await write("leaders_save", { list, base: revN("룹장"), force: !!force });
-  if (r && !r.ok && r.error === "stale") {
-    if (askOverwrite(r, "룹장")) return saveLeaders(true);
-    LE = []; await load(); drawLeaderTbl(); return toast("최신 룹장 목록을 불러왔어요");
-  }
-  if (r && r.ok) { LE = []; drawLeaderTbl(); toast("룹장 저장"); }
-}
-
+$("#wDate").value = today(); $("#fDate").value = today();
+renderFund();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 boot();
 </script>
