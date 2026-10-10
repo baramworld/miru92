@@ -76,9 +76,9 @@ table.rt tr.t주술사 td.drop{background:rgba(170,120,220,.14)}
 #poolSlots .person{font-size:15px;padding:10px 14px;border-radius:10px;gap:6px}
 #poolSlots .person .detail{font-size:12px}
 /* 대기 칸은 직업이 섞이니 색으로 구분해요 */
-.person.jG{background:#cfe0fb}
-.person.jD{background:#cdeedd}
-.person.jJ{background:#e4d3f7}
+.person.jG{background:#cfe0fb;color:#12325e}
+.person.jD{background:#cdeedd;color:#124a31}
+.person.jJ{background:#e4d3f7;color:#3d1f63}
 .person.jX{background:var(--chip)}
 .merc{background:#ffe6c7;color:#4a3208;border-radius:10px;padding:10px 14px;font-size:15px;cursor:grab;display:flex;align-items:center;gap:6px;user-select:none}
 .merc .detail{opacity:.7;font-size:12px}
@@ -97,9 +97,9 @@ table.rt tr.t주술사 td.drop{background:rgba(170,120,220,.14)}
 .sit .mini{font-size:11px;padding:4px 7px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--sub);cursor:pointer;white-space:nowrap}
 .sbox.no .sit{opacity:.7}
 @media(prefers-color-scheme:dark){
-  .person.jG{background:#27406e}
-  .person.jD{background:#1f4a36}
-  .person.jJ{background:#3d2c5c}
+  .person.jG{background:#27406e;color:#dce9ff}
+  .person.jD{background:#1f4a36;color:#d6f3e4}
+  .person.jJ{background:#3d2c5c;color:#ead9ff}
 }
 .person.gwanmun{background:var(--pri)!important;color:#fff;font-weight:700}
 #rosterTbl .it,#leaderTbl .it{display:grid;grid-template-columns:1fr 90px 1fr 56px 34px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -138,8 +138,8 @@ table.rt tr.t주술사 td.drop{background:rgba(170,120,220,.14)}
       <div class="sub" id="signInfo">모집을 열고 문파원이 신청하면 여기로 들어와요.</div>
       <div id="signList" style="margin-top:10px"></div>
       <button class="pri big-btn" style="margin-top:12px" onclick="loadSignups()">신청한 사람 불러오기</button>
-      <button class="big-btn" style="margin-top:8px" onclick="addNewSignups()">늦게 신청한 사람만 추가</button>
-      <div class="sub" style="margin-top:6px">위는 처음부터 다시 불러와요(배치가 지워져요). 아래는 지금 배치를 그대로 두고 새로 신청한 사람만 대기 칸에 넣어줘요.</div>
+      <button class="big-btn" style="margin-top:8px" onclick="addNewSignups()">신청 바뀐 것 반영 (늦참 · 노쇼 · 오픈 변경)</button>
+      <div class="sub" style="margin-top:6px">위는 처음부터 다시 불러와요(배치가 지워져요). 아래는 지금 배치를 그대로 두고, 늦게 신청한 사람 · 불참으로 바뀐 사람 · 오픈으로 바뀐 사람만 맞춰줘요.</div>
       <button class="pri big-btn" style="margin-top:10px" onclick="autoArrange()">자동 배치</button>
       <div class="sub" id="parsedInfo" style="margin-top:8px"></div>
       <button class="sm ghost hide" id="addToRoster" style="margin-top:8px" onclick="pushNewToRoster()"></button>
@@ -533,7 +533,9 @@ async function setSignupStatus(id, status) {
   signPicked = null;
   if (!x || x.status === status) return renderSignBoxes(D.signups || []);
   const r = await write("signup_status", { id, status });
-  if (r && r.ok) toast(`${x.name} → ${status}`);
+  if (!r || !r.ok) return;
+  if (groups.length || openers.length || mercPool.length) syncWithSignups();   // 표·운전자 칸도 같이 맞춰요
+  toast(`${x.name} → ${status}`);
 }
 
 // 제목에 "테스트"가 들어간 공성에서만 간단 정리 버튼이 보여요.
@@ -608,22 +610,8 @@ function loadSignups() {
   // 캐릭 미정 용병은 표에 안 넣고 "운전 가능한 용병" 칸으로 따로 빼요.
   mercPool = all.filter(x => x.drv).map(x => ({ name: x.name, by: x.by || "" }));
   const s = all.filter(x => !x.drv);
-  const seen = {};
-  parsed = s.filter(x => (seen[x.name] ? false : (seen[x.name] = true))).map(x => {
-    const ex = findRoster(x.name);
-    const detail = x.detail || (ex ? ex.detail : "");
-    return { name: x.name, group: jobOf(x.group || (ex ? ex.group : ""), detail), detail,
-             gwanmun: ex ? !!ex.gwanmun : false, kind: x.status === "오픈" ? "오픈" : "참여",
-             merc: !!x.merc, by: x.by || "" };
-  });
-  const bad = parsed.filter(p => !p.group).map(p => p.name);
-  const joinN = parsed.filter(p => p.kind === "참여").length, openN = parsed.filter(p => p.kind === "오픈").length;
-  const nm = k => parsed.filter(p => p.kind === k).map(p => esc(p.name)).join(", ");
-  $("#parsedInfo").innerHTML = `참여 ${joinN}명 · 오픈 ${openN}명` + (mercPool.length ? ` · 운전 용병 ${mercPool.length}명` : "") +
-    (joinN ? `<br><span class="sub">참여: ${nm("참여")}</span>` : "") +
-    (openN ? `<br><span class="sub">오픈: ${nm("오픈")}</span>` : "") +
-    (mercPool.length ? `<br><span class="sub">운전 용병: ${mercPool.map(m => esc(m.name) + (m.by ? `(${esc(m.by)})` : "")).join(", ")}</span>` : "") +
-    (bad.length ? `<br><span class="bad">직업을 모르는 ${bad.length}명은 대기 칸으로 가요: ${bad.slice(0, 10).map(esc).join(", ")}</span>` : "");
+  parsed = buildParsed(s);
+  renderParsed();
   $("#addToRoster").classList.add("hide");
   if (D.recruit && !$("#expTitle").value.trim()) $("#expTitle").value = D.recruit.title;
   renderDrv();
@@ -633,28 +621,104 @@ function loadSignups() {
 // 배치를 유지한 채, 아직 표에 없는 신청자만 대기 칸으로 넣어요.
 async function addNewSignups() {
   await load();
-  const s = (D.signups || []).filter(x => x.status === "참여" || x.status === "오픈");
-  if (!s.length) return toast("들어온 신청이 없어요", 1);
+  if (!(D.signups || []).length) return toast("들어온 신청이 없어요", 1);
+  const n = syncWithSignups();
+  const msg = [];
+  if (n.added.length) msg.push(`${n.added.length}명 추가 (${n.added.slice(0, 5).join(", ")})`);
+  if (n.opened.length) msg.push(`${n.opened.length}명 오픈으로 바뀜 (${n.opened.slice(0, 5).join(", ")})`);
+  if (n.unopened.length) msg.push(`${n.unopened.length}명 오픈 취소`);
+  if (n.dropped.length) msg.push(`${n.dropped.length}명 불참으로 빠짐 (${n.dropped.slice(0, 5).join(", ")})`);
+  toast(msg.length ? msg.join(" · ") : "바뀐 게 없어요");
+}
+
+// 신청 줄 → 배치용 사람 목록 (용병 운전자는 빼고, 중복 이름은 한 번만)
+function buildParsed(list) {
+  const seen = {};
+  return list.filter(x => !x.drv && x.status !== "불참")
+    .filter(x => (seen[x.name] ? false : (seen[x.name] = true)))
+    .map(x => {
+      const ex = findRoster(x.name);
+      const detail = x.detail || (ex ? ex.detail : "");
+      return { name: x.name, group: jobOf(x.group || (ex ? ex.group : ""), detail), detail,
+               gwanmun: ex ? !!ex.gwanmun : false, kind: x.status === "오픈" ? "오픈" : "참여",
+               merc: !!x.merc, by: x.by || "" };
+    });
+}
+
+// 불러온 명단을 신청 목록처럼 칸으로 보여줘요 (색 = 직업)
+function renderParsed() {
+  const el = $("#parsedInfo");
+  if (!el) return;
+  if (!parsed.length && !mercPool.length) { el.innerHTML = ""; return; }
+  const chip = p => `<span class="person j${esc(jobClass(p.group))} ${p.gwanmun ? "gwanmun" : ""}" style="cursor:default"><b>${esc(p.name)}</b>${p.detail ? `<span class="detail">${esc(p.detail)}</span>` : ""}</span>`;
+  const mchip = m => `<span class="merc" style="cursor:default;font-size:13px;padding:6px 10px"><b>${esc(m.name)}</b>${m.by ? `<span class="detail">${esc(m.by)}</span>` : ""}</span>`;
+  const join = parsed.filter(p => p.kind === "참여");
+  const open = parsed.filter(p => p.kind === "오픈");
+  const bad = parsed.filter(p => !p.group);
+  const box = (title, color, n, inner) =>
+    `<div class="sbox"><h3><span class="tag" style="background:${color};color:#fff">${title} ${n}</span></h3>
+      <div class="row wrap" style="gap:6px">${inner || `<span class="sub">없음</span>`}</div></div>`;
+  el.innerHTML = `<div class="sgrid">
+      ${box("참여", "var(--ok)", join.length, join.map(chip).join(""))}
+      ${box("아이디 오픈", "var(--warn)", open.length, open.map(chip).join(""))}
+      ${mercPool.length ? box("운전 용병", "#c47a00", mercPool.length, mercPool.map(mchip).join("")) : ""}
+      ${bad.length ? box("직업 모름 — 대기로 가요", "var(--pri)", bad.length, bad.map(chip).join("")) : ""}
+    </div>
+    <div class="sub" style="margin-top:8px">
+      <span class="person jG" style="cursor:default;display:inline-flex;font-size:11px;padding:3px 8px">격수</span>
+      <span class="person jD" style="cursor:default;display:inline-flex;font-size:11px;padding:3px 8px">도사</span>
+      <span class="person jJ" style="cursor:default;display:inline-flex;font-size:11px;padding:3px 8px">주술사</span>
+      <span class="person gwanmun" style="cursor:default;display:inline-flex;font-size:11px;padding:3px 8px">공문</span>
+    </div>`;
+}
+
+// 지금 배치를 그대로 두고, 신청 내용(늦참·노쇼·오픈 변경)만 맞춰요.
+function syncWithSignups() {
+  const s = D.signups || [];
+  const by = {}; s.forEach(x => by[x.name] = x);
+  const gone = n => { const x = by[n]; return !x || x.status === "불참"; };
+  const added = [], opened = [], unopened = [], dropped = [];
+
+  // 1) 불참·삭제된 사람은 표에서 빼요
+  groups.forEach(g => g.rows.forEach(r => r.people.forEach((p, i) => {
+    if (p && gone(p.name)) { r.people[i] = null; dropped.push(p.name); }
+  })));
+  poolMembers = poolMembers.filter(p => { if (gone(p.name)) { dropped.push(p.name); return false; } return true; });
+
+  // 2) 운전 용병 칸 맞추기
+  mercPool = mercPool.filter(m => by[m.name] && by[m.name].drv && by[m.name].status !== "불참");
+  s.filter(x => x.drv && x.status !== "불참").forEach(x => {
+    if (!mercPool.some(m => m.name === x.name)) mercPool.push({ name: x.name, by: x.by || "" });
+  });
+
+  // 3) 아직 표에 없는 신청자는 대기 칸으로
   const have = {};
   allPeople().forEach(p => have[p.name] = true);
-  mercPool.forEach(m => have[m.name] = true);
-  s.filter(x => x.drv && !have[x.name]).forEach(x => mercPool.push({ name: x.name, by: x.by || "" }));
-  const add = s.filter(x => !x.drv && !have[x.name]);
-  if (!add.length) { renderDrv(); return toast("새로 신청한 사람이 없어요"); }
-  add.forEach(x => {
-    const ex = findRoster(x.name);
-    const detail = x.detail || (ex ? ex.detail : "");
-    const p = { name: x.name, group: jobOf(x.group || (ex ? ex.group : ""), detail), detail,
-                gwanmun: ex ? !!ex.gwanmun : false, driver: "", opened: x.status === "오픈",
-                merc: !!x.merc, by: x.by || "" };
-    poolMembers.push(p);
-    if (x.status === "오픈" && !openers.some(o => o.name === x.name)) {
-      openers.push({ name: p.name, group: p.group, detail: p.detail, driver: "", merc: !!x.merc });
-    }
+  s.filter(x => !x.drv && x.status !== "불참" && !have[x.name]).forEach(x => {
+    const ex = findRoster(x.name), detail = x.detail || (ex ? ex.detail : "");
+    poolMembers.push({ name: x.name, group: jobOf(x.group || (ex ? ex.group : ""), detail), detail,
+                       gwanmun: ex ? !!ex.gwanmun : false, driver: "", opened: x.status === "오픈",
+                       merc: !!x.merc, by: x.by || "" });
+    added.push(x.name);
   });
-  renderBoard(); renderDrv();
-  toast(`${add.length}명 추가했어요 — 대기 칸에서 표로 옮겨주세요: ${add.map(x => x.name).slice(0, 6).join(", ")}`);
+
+  // 4) 아이디 오픈 ↔ 운전자 칸 맞추기 (여기가 어긋나면 오픈한 캐릭이 안 보여요)
+  openers = openers.filter(o => {
+    if (by[o.name] && by[o.name].status === "오픈") return true;
+    unopened.push(o.name); return false;
+  });
+  s.filter(x => x.status === "오픈").forEach(x => {
+    if (openers.some(o => o.name === x.name)) return;
+    const ex = findRoster(x.name), detail = x.detail || (ex ? ex.detail : "");
+    openers.push({ name: x.name, group: jobOf(x.group || (ex ? ex.group : ""), detail), detail, driver: "", merc: !!x.merc });
+    opened.push(x.name);
+  });
+
+  parsed = buildParsed(s);
+  renderBoard(); renderDrv(); renderParsed();
+  return { added, opened, unopened, dropped };
 }
+
 
 function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
 function resetAll() {
