@@ -239,7 +239,7 @@ const fmt = n => Number(n || 0).toLocaleString("ko-KR");
 const DEFAULT_API = "https://script.google.com/macros/s/AKfycbw0M5R3wzrOh6fgey3lm6wpS0IhXS5pgaZXAWvHFxq6GNeB5d8XlcXge-uV6sIqwKcw/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1ql68dJWN7M_9E3aF1DROmmVTUE-CXuyY6Kf2NYJlI-M/edit";
 let API = localStorage.getItem("api") || DEFAULT_API;
-let D = { roster: [], leaders: [], board: null, groups: ["격수","도사","도적","주술사"], kinds: ["참여","오픈","차감","기타"],
+let D = { roster: [], leaders: [], board: null, groups: ["전사","도사","도적","주술사"], kinds: ["참여","오픈","차감","기타"],
           settings: { 참여점수: 1, 오픈점수: 1 }, scores: [], totals: {}, usedKeys: [],
           recruit: null, signups: [], recruits: [] };
 let tab = "s-board";
@@ -319,10 +319,13 @@ function onData() {
 /* ---------- 직업 분류 ---------- */
 // 격수 = 전사 계열 + 도적 계열, 도사 = 도사 계열, 주술사 = 주술사 계열
 const JOB_RE = [
-  ["격수", /(전사|검객|검제|검황|도적|자객|진검|귀검)/],
+  ["전사", /(전사|검객|검제|검황)/],
+  ["도적", /(도적|자객|진검|귀검)/],
   ["도사", /(도사|도인|명인|진인)/],
   ["주술사", /(주술사|술사|현사|현인)/]
 ];
+// 룹표의 "격수" 줄에는 전사와 도적이 같이 들어가요.
+function isGyeoksu(g) { return g === "전사" || g === "도적" || g === "격수"; }
 function classify(jobText) {
   const t = String(jobText || "");
   for (const [g, re] of JOB_RE) if (re.test(t)) return g;
@@ -519,7 +522,7 @@ function autoArrange() {
   const gs = [], ds = [];
   parsed.forEach(p => {
     const m = mk(p);
-    if (p.group === "격수") gs.push(m);
+    if (isGyeoksu(p.group)) gs.push(m);
     else if (p.group === "도사") ds.push(m);
     else poolMembers.push(m);
   });
