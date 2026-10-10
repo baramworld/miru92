@@ -452,7 +452,11 @@ function renderRecruit() {
            <button class="grow" onclick="$('#recForm').classList.remove('hide');$('#recTitle').focus()">새 모집 만들기</button>
          </div>
          <div class="sub" style="margin-top:6px">닫혀 있어도 들어온 신청은 아래에서 불러올 수 있어요.</div>`) +
-    `<button class="sm ghost" style="width:100%;margin-top:12px;color:var(--pri)" onclick="purgeSiege()">테스트 정리 — 이 공성 기록 전부 지우기</button>`;
+    (isTest(r.title)
+      ? `<button class="sm ghost" style="width:100%;margin-top:12px;color:var(--warn)" onclick="purgeSiege(false)">테스트 정리 — 이 공성 기록 지우기</button>`
+      : "") +
+    `<button class="sm ghost" style="width:100%;margin-top:8px;color:var(--pri)" onclick="purgeSiege(true)">기록 삭제 — 제목을 받아쓰고 지워요</button>` +
+    trashHTML();
   $("#signInfo").innerHTML = `<b>${esc(r.title)}</b> — 참여 ${j}명 · 오픈 ${o}명 · 불참 ${n}명` + (r.open ? "" : ` <span class="sub">(모집 닫힘)</span>`) + names;
 }
 async function delSignup(id, name) {
