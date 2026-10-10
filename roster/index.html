@@ -611,6 +611,7 @@ function loadSignups() {
   mercPool = all.filter(x => x.drv).map(x => ({ name: x.name, by: x.by || "" }));
   const s = all.filter(x => !x.drv);
   parsed = buildParsed(s);
+  openers = rebuildOpeners();
   renderParsed();
   $("#addToRoster").classList.add("hide");
   if (D.recruit && !$("#expTitle").value.trim()) $("#expTitle").value = D.recruit.title;
@@ -629,6 +630,16 @@ async function addNewSignups() {
   if (n.unopened.length) msg.push(`${n.unopened.length}명 오픈 취소`);
   if (n.dropped.length) msg.push(`${n.dropped.length}명 불참으로 빠짐 (${n.dropped.slice(0, 5).join(", ")})`);
   toast(msg.length ? msg.join(" · ") : "바뀐 게 없어요");
+}
+
+// 오픈 신청자로 운전자 칸을 다시 만들어요. 이미 적어둔 운전자 이름은 그대로 둬요.
+function rebuildOpeners() {
+  const prev = {}; openers.forEach(o => prev[o.name] = o);
+  return parsed.filter(p => p.kind === "오픈").map(p => ({
+    name: p.name, group: p.group, detail: p.detail,
+    driver: prev[p.name] ? prev[p.name].driver || "" : "",
+    merc: prev[p.name] ? !!prev[p.name].merc : !!p.merc
+  }));
 }
 
 // 신청 줄 → 배치용 사람 목록 (용병 운전자는 빼고, 중복 이름은 한 번만)
@@ -766,7 +777,7 @@ function autoArrange() {
   if (nRaw === null) return;
   const n = Math.max(1, Math.min(12, Number(nRaw) || 3));
   poolMembers = []; groups = [];
-  openers = parsed.filter(p => p.kind === "오픈").map(p => ({ name: p.name, group: p.group, detail: p.detail, driver: "", merc: !!p.merc }));
+  openers = rebuildOpeners();
   const mk = p => ({ name: p.name, group: p.group, detail: p.detail, gwanmun: p.gwanmun, driver: "",
                      opened: p.kind === "오픈", merc: !!p.merc, by: p.by || "" });
   const gs = [], ds = [], js = [];
