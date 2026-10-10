@@ -28,6 +28,7 @@ button{font-family:inherit;font-size:16px;border:0;border-radius:10px;padding:13
 .chip{padding:11px 16px;border-radius:999px;background:var(--chip);font-size:16px;border:0;cursor:pointer}
 .chip.on{background:var(--pri);color:#fff;font-weight:700}
 .hide{display:none!important}
+.bad{color:var(--pri)}
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#222;color:#fff;padding:13px 20px;border-radius:10px;font-size:15px;opacity:0;pointer-events:none;transition:.2s;z-index:9;max-width:92vw;text-align:center}
 #toast.show{opacity:1}#toast.err{background:#b3261e}
 .list .it{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
@@ -66,7 +67,16 @@ button{font-family:inherit;font-size:16px;border:0;border-radius:10px;padding:13
 
       <div class="sub" style="margin:14px 0 6px">직업</div>
       <div class="row wrap" id="grpChips"></div>
-      <input id="detail" placeholder="세부직업 (예: 진인, 검제) — 선택" style="margin-top:10px">
+
+      <div class="sub" style="margin:14px 0 6px">차수</div>
+      <div class="row wrap" id="detChips"></div>
+      <input id="detail" class="hide" placeholder="직접 적기" style="margin-top:8px" oninput="render()">
+
+      <label class="row" style="margin-top:14px;gap:8px;cursor:pointer">
+        <input type="checkbox" id="merc" style="width:22px;height:22px" onchange="render()">
+        <span>용병이에요 (문파원이 아닌 분)</span>
+      </label>
+      <input id="by" class="hide" placeholder="부른 사람 / 담당 (예: 진태)" style="margin-top:8px">
 
       <div id="mine" class="sub" style="margin-top:12px"></div>
     </div>
@@ -91,7 +101,14 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const API = "https://script.google.com/macros/s/AKfycbw0M5R3wzrOh6fgey3lm6wpS0IhXS5pgaZXAWvHFxq6GNeB5d8XlcXge-uV6sIqwKcw/exec";
 let D = { recruit: null, signups: [], roster: [], groups: ["격수","도사","도적","주술사"] };
-let grp = "";
+let grp = "", det = "";
+// 차수(세부직업) — 직업군마다 다름
+const DETAILS = {
+  "격수": ["전사", "검객", "검제", "검황", "도적", "자객", "진검", "귀검"],
+  "도사": ["도사", "도인", "명인", "진인"],
+  "도적": ["도적", "자객", "진검", "귀검"],
+  "주술사": ["주술사", "술사", "현사", "현인"]
+};
 
 function toast(m, err) { const t = $("#toast"); t.textContent = m; t.className = "show" + (err ? " err" : ""); clearTimeout(toast.h); toast.h = setTimeout(() => t.className = "", 2600); }
 function devId_() {
@@ -104,7 +121,8 @@ function recall() { try { return localStorage.getItem("myname") || ""; } catch (
 
 async function load() {
   try {
-    const r = await fetch(API + "?pub=1").then(r => r.json());
+    // 주소에 시간값을 붙여 브라우저가 옛 응답을 쓰지 못하게 해요
+    const r = await fetch(API + "?pub=1&t=" + Date.now(), { cache: "no-store" }).then(r => r.json());
     if (!r.ok) return toast("불러오기 실패", 1);
     D = r.data; render();
   } catch (e) { toast("불러오기 실패 — 잠시 뒤 다시 열어주세요", 1); }
@@ -124,18 +142,25 @@ function render() {
   $("#cNo").textContent = s.filter(x => x.status === "불참").length;
 
   $("#names").innerHTML = D.roster.map(p => `<option value="${esc(p.name)}">`).join("");
-  $("#grpChips").innerHTML = D.groups.map(g => `<button class="chip ${g === grp ? "on" : ""}" onclick="grp='${g}';render()">${g}</button>`).join("");
+  $("#grpChips").innerHTML = D.groups.map(g => `<button class="chip ${g === grp ? "on" : ""}" onclick="pickGrp('${g}')">${g}</button>`).join("");
+  const ds = DETAILS[grp] || [];
+  $("#detChips").innerHTML = grp
+    ? ds.map(x => `<button class="chip ${x === det ? "on" : ""}" onclick="det='${x}';$('#detail').value='';render()">${x}</button>`).join("")
+      + `<button class="chip ${det === "__etc" ? "on" : ""}" onclick="det='__etc';render()">직접 적기</button>`
+    : `<span class="sub">직업을 먼저 골라주세요</span>`;
+  $("#detail").classList.toggle("hide", det !== "__etc");
+  $("#by").classList.toggle("hide", !$("#merc").checked);
 
   const order = { "참여": 0, "오픈": 1, "불참": 2 };
   $("#list").innerHTML = s.length
     ? s.slice().sort((a, b) => (order[a.status] - order[b.status]) || a.name.localeCompare(b.name))
-       .map(x => `<div class="it"><span class="tag ${esc(x.status)}">${esc(x.status)}</span><div class="grow">${esc(x.name)}${x.detail ? ` <span class="sub">(${esc(x.detail)})</span>` : ""}</div></div>`).join("")
+       .map(x => `<div class="it"><span class="tag ${esc(x.status)}">${esc(x.status)}</span><div class="grow">${esc(x.name)}${x.detail ? ` <span class="sub">(${esc(x.detail)})</span>` : ""}${x.merc ? ` <span class="tag">용병${x.by ? " · " + esc(x.by) : ""}</span>` : ""}</div></div>`).join("")
     : `<div class="sub">아직 아무도 안 했어요</div>`;
 
   const me = mine();
   ["참여", "오픈", "불참"].forEach(k => $("#btn" + k).classList.toggle("on", !!me && me.status === k));
   $("#mine").innerHTML = me
-    ? `지금 <b>${esc(me.status)}</b>${josa(me.status)} 되어 있어요.`
+    ? `<span class="bad"><b>이미 신청했어요</b> — 지금 <b>${esc(me.status)}</b>${josa(me.status)} 되어 있어요. 다시 누르면 바뀌어요.</span>`
     : `아직 신청 안 했어요.`;
 }
 // 받침이 있으면 "으로", 없으면 "로"
@@ -145,14 +170,25 @@ function josa(w) {
   const t = (c - 0xAC00) % 28;
   return (t === 0 || t === 8) ? "로" : "으로";
 }
+function pickGrp(g) { if (grp !== g) det = ""; grp = g; render(); }
+function detailVal() { return det === "__etc" ? $("#detail").value.trim() : det; }
 function mine() {
   const n = $("#name").value.trim();
   return n ? D.signups.find(x => x.name === n) : null;
 }
 function onName() {
   const n = $("#name").value.trim();
-  const p = D.roster.find(x => x.name === n);
-  if (p) { grp = p.group || grp; if (p.detail && !$("#detail").value.trim()) $("#detail").value = p.detail; }
+  const s = D.signups.find(x => x.name === n);
+  const r = D.roster.find(x => x.name === n);
+  // 신청 기록을 먼저 보고, 비어 있는 칸은 명단에서 채워요
+  const g = (s && s.group) || (r && r.group) || "";
+  const d = (s && s.detail) || (r && r.detail) || "";
+  if (g) grp = g;
+  if (d) {
+    det = (DETAILS[grp] || []).includes(d) ? d : "__etc";
+    if (det === "__etc") $("#detail").value = d;
+  }
+  if (s) { $("#merc").checked = !!s.merc; if (s.by) $("#by").value = s.by; }
   render();
 }
 
@@ -160,15 +196,20 @@ async function send(status) {
   const name = $("#name").value.trim();
   if (!name) return toast("캐릭명을 먼저 적어 주세요", 1);
   if (status !== "불참" && !grp) return toast("직업을 골라 주세요", 1);
+  if (status !== "불참" && !detailVal()) return toast("차수를 골라 주세요", 1);
+  if ($("#merc").checked && !$("#by").value.trim()) return toast("용병은 부른 사람을 적어 주세요", 1);
   $("#busy").classList.remove("hide");
   try {
     const r = await fetch(API, {
       method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "signup", name, group: grp, detail: $("#detail").value.trim(), status, dev: devId_() })
+      cache: "no-store",
+      body: JSON.stringify({ action: "signup", name, group: grp, detail: detailVal(), status,
+                             merc: $("#merc").checked, by: $("#by").value.trim(), dev: devId_() })
     }).then(r => r.json());
     if (!r.ok) return toast(r.error || "실패", 1);
     D = r.data; remember(name); render();
-    toast(status === "오픈" ? "아이디 오픈으로 신청했어요. 고마워요!" : `${status}${josa(status)} 신청했어요`);
+    if (r.dup) toast(`이미 신청한 이름이라 ${status}${josa(status)} 바꿨어요`);
+    else toast(status === "오픈" ? "아이디 오픈으로 신청했어요. 고마워요!" : `${status}${josa(status)} 신청했어요`);
   } catch (e) { toast("보내기 실패 — 잠시 뒤 다시 해주세요", 1); }
   finally { $("#busy").classList.add("hide"); }
 }
