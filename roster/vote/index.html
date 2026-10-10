@@ -61,20 +61,26 @@ button{font-family:inherit;font-size:16px;border:0;border-radius:10px;padding:13
     </div>
 
     <div class="card">
-      <h2 style="margin-top:0">내 캐릭</h2>
+      <h2 style="margin-top:0" id="hdMine">내 캐릭</h2>
       <input id="name" list="names" placeholder="캐릭명 (예: 화무결)" autocomplete="off" oninput="onName()">
       <datalist id="names"></datalist>
 
-      <div class="sub" style="margin:14px 0 6px">직업</div>
-      <div class="row wrap" id="grpChips"></div>
+      <div id="jobWrap">
+        <div class="sub" style="margin:14px 0 6px">직업</div>
+        <div class="row wrap" id="grpChips"></div>
 
-      <div class="sub" style="margin:14px 0 6px">차수</div>
-      <div class="row wrap" id="detChips"></div>
-      <input id="detail" class="hide" placeholder="직접 적기" style="margin-top:8px" oninput="render()">
+        <div class="sub" style="margin:14px 0 6px">차수</div>
+        <div class="row wrap" id="detChips"></div>
+        <input id="detail" class="hide" placeholder="직접 적기" style="margin-top:8px" oninput="render()">
+      </div>
 
       <label class="row" style="margin-top:14px;gap:8px;cursor:pointer">
         <input type="checkbox" id="merc" style="width:22px;height:22px" onchange="render()">
         <span>용병이에요 (문파원이 아닌 분)</span>
+      </label>
+      <label class="row hide" id="drvWrap" style="margin-top:10px;gap:8px;cursor:pointer">
+        <input type="checkbox" id="drv" style="width:22px;height:22px" onchange="render()">
+        <span>어느 캐릭 몰지 아직 몰라요 — <b>운전만</b> 할게요</span>
       </label>
       <input id="by" class="hide" placeholder="부른 사람 / 담당 (예: 진태)" style="margin-top:8px">
 
@@ -150,12 +156,17 @@ function render() {
       + `<button class="chip ${det === "__etc" ? "on" : ""}" onclick="det='__etc';render()">직접 적기</button>`
     : `<span class="sub">직업을 먼저 골라주세요</span>`;
   $("#detail").classList.toggle("hide", det !== "__etc");
-  $("#by").classList.toggle("hide", !$("#merc").checked);
+  const isMerc = $("#merc").checked, onlyDrv = isMerc && $("#drv").checked;
+  $("#by").classList.toggle("hide", !isMerc);
+  $("#drvWrap").classList.toggle("hide", !isMerc);
+  $("#jobWrap").classList.toggle("hide", onlyDrv);
+  $("#hdMine").textContent = onlyDrv ? "내 이름 (용병)" : "내 캐릭";
+  $("#name").placeholder = onlyDrv ? "내 이름 (예: 진태)" : "캐릭명 (예: 화무결)";
 
   const order = { "참여": 0, "오픈": 1, "불참": 2 };
   $("#list").innerHTML = s.length
     ? s.slice().sort((a, b) => (order[a.status] - order[b.status]) || a.name.localeCompare(b.name))
-       .map(x => `<div class="it"><span class="tag ${esc(x.status)}">${esc(x.status)}</span><div class="grow">${esc(x.name)}${x.detail ? ` <span class="sub">(${esc(x.detail)})</span>` : ""}${x.merc ? ` <span class="tag">용병${x.by ? " · " + esc(x.by) : ""}</span>` : ""}</div></div>`).join("")
+       .map(x => `<div class="it"><span class="tag ${esc(x.status)}">${esc(x.status)}</span><div class="grow">${esc(x.name)}${x.detail ? ` <span class="sub">(${esc(x.detail)})</span>` : ""}${x.merc ? ` <span class="tag">용병${x.by ? " · " + esc(x.by) : ""}</span>` : ""}${x.drv ? ` <span class="tag">운전만</span>` : ""}</div></div>`).join("")
     : `<div class="sub">아직 아무도 안 했어요</div>`;
 
   const me = mine();
@@ -189,23 +200,24 @@ function onName() {
     det = (DETAILS[grp] || []).includes(d) ? d : "__etc";
     if (det === "__etc") $("#detail").value = d;
   }
-  if (s) { $("#merc").checked = !!s.merc; if (s.by) $("#by").value = s.by; }
+  if (s) { $("#merc").checked = !!s.merc; $("#drv").checked = !!s.drv; if (s.by) $("#by").value = s.by; }
   render();
 }
 
 async function send(status) {
   const name = $("#name").value.trim();
   if (!name) return toast("캐릭명을 먼저 적어 주세요", 1);
-  if (status !== "불참" && !grp) return toast("직업을 골라 주세요", 1);
-  if (status !== "불참" && !detailVal()) return toast("차수를 골라 주세요", 1);
+  const onlyDrv = $("#merc").checked && $("#drv").checked;
+  if (status !== "불참" && !onlyDrv && !grp) return toast("직업을 골라 주세요", 1);
+  if (status !== "불참" && !onlyDrv && !detailVal()) return toast("차수를 골라 주세요", 1);
   if ($("#merc").checked && !$("#by").value.trim()) return toast("용병은 부른 사람을 적어 주세요", 1);
   $("#busy").classList.remove("hide");
   try {
     const r = await fetch(API, {
       method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
       cache: "no-store",
-      body: JSON.stringify({ action: "signup", name, group: grp, detail: detailVal(), status,
-                             merc: $("#merc").checked, by: $("#by").value.trim(), dev: devId_() })
+      body: JSON.stringify({ action: "signup", name, group: onlyDrv ? "" : grp, detail: onlyDrv ? "" : detailVal(), status,
+                             merc: $("#merc").checked, drv: onlyDrv, by: $("#by").value.trim(), dev: devId_() })
     }).then(r => r.json());
     if (!r.ok) return toast(r.error || "실패", 1);
     D = r.data; remember(name); render();
