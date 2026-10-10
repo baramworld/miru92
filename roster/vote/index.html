@@ -100,14 +100,15 @@ button{font-family:inherit;font-size:16px;border:0;border-radius:10px;padding:13
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const API = "https://script.google.com/macros/s/AKfycbw0M5R3wzrOh6fgey3lm6wpS0IhXS5pgaZXAWvHFxq6GNeB5d8XlcXge-uV6sIqwKcw/exec";
-let D = { recruit: null, signups: [], roster: [], groups: ["격수","도사","도적","주술사"] };
+let D = { recruit: null, signups: [], roster: [], groups: ["전사","도사","도적","주술사"] };
 let grp = "", det = "";
 // 차수(세부직업) — 직업군마다 다름
 const DETAILS = {
-  "격수": ["전사", "검객", "검제", "검황", "도적", "자객", "진검", "귀검"],
+  "전사": ["전사", "검객", "검제", "검황"],
   "도사": ["도사", "도인", "명인", "진인"],
   "도적": ["도적", "자객", "진검", "귀검"],
-  "주술사": ["주술사", "술사", "현사", "현인"]
+  "주술사": ["주술사", "술사", "현사", "현인"],
+  "격수": ["전사", "검객", "검제", "검황"]
 };
 
 function toast(m, err) { const t = $("#toast"); t.textContent = m; t.className = "show" + (err ? " err" : ""); clearTimeout(toast.h); toast.h = setTimeout(() => t.className = "", 2600); }
