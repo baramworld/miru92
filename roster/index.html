@@ -48,23 +48,19 @@ nav button[aria-current=true]{color:var(--pri)}
 .num{font-variant-numeric:tabular-nums;font-weight:700}
 .del{opacity:.4;text-decoration:line-through}
 
-/* board — 원래 쓰던 시트 표 모양: 맨 윗줄 격수, 그 아래 도사 */
+/* board — 원래 쓰던 시트 표 모양 */
 #board{overflow-x:auto}
-table.rt{border-collapse:collapse;width:100%;table-layout:fixed;background:var(--card)}
-table.rt td{border:1px solid var(--line);padding:0;vertical-align:middle;height:34px;min-width:104px}
-table.rt td.drop.over{background:var(--chip);outline:2px solid var(--pri);outline-offset:-2px}
-table.rt tr.headrow td{background:#d9d9d9;font-weight:700}
-table.rt tr.subrow td{background:#cfd8ef}
-@media(prefers-color-scheme:dark){
-  table.rt tr.headrow td{background:#3a3f49}
-  table.rt tr.subrow td{background:#28324a}
-}
-.cell{padding:5px 8px;font-size:13px;cursor:grab;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+table.rt{border-collapse:collapse;background:var(--card);font-size:13px}
+table.rt td{border:1px solid var(--line);padding:0;height:30px;min-width:96px;vertical-align:middle}
+table.rt td.gname{min-width:52px;width:52px;text-align:center;font-weight:800;color:#fff}
+table.rt td.rlabel{min-width:46px;width:46px;text-align:center;font-weight:700;background:var(--chip)}
+table.rt td.drop.over{outline:2px solid var(--pri);outline-offset:-2px}
+table.rt tr.t격수 td.drop{background:rgba(120,150,230,.16)}
+table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
+.cell{padding:4px 7px;cursor:grab;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .cell.gwanmun{color:var(--pri);font-weight:800}
 .cell.picked{outline:3px solid var(--pri);outline-offset:-3px;border-radius:4px}
-.cell .detail{opacity:.6;font-size:11px;margin-left:3px}
-.cell .drv{font-size:10px;background:rgba(0,0,0,.14);border-radius:4px;padding:0 4px;margin-left:3px}
-@media(prefers-color-scheme:dark){.cell .drv{background:rgba(255,255,255,.16)}}
+.cell .detail{opacity:.6;font-size:11px}
 .slots{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;border:1px dashed var(--line);border-radius:8px;padding:6px}
 .slots.over{background:var(--chip)}
 .person{background:var(--chip);border-radius:8px;padding:6px 10px;font-size:13px;cursor:grab;display:flex;align-items:center;gap:4px;user-select:none}
@@ -130,6 +126,16 @@ table.rt tr.subrow td{background:#cfd8ef}
     <div id="pool" class="pool hide">
       <div class="pool-title">대기 (자리 없음 — 드래그하거나 눌러서 넣어주세요)</div>
       <div class="slots" id="poolSlots" data-row="pool"></div>
+    </div>
+
+    <div class="card" style="padding:10px 14px">
+      <div class="row wrap">
+        <button class="sm ghost" onclick="addGroup()">+ 룹 추가</button>
+        <button class="sm ghost" onclick="addRow('격수')">+ 격수 줄</button>
+        <button class="sm ghost" onclick="addRow('도사')">+ 도사 줄</button>
+        <button class="sm ghost" onclick="setCols()">칸 수 바꾸기</button>
+        <span class="sub grow" id="colInfo"></span>
+      </div>
     </div>
 
     <div id="board"></div>
@@ -232,9 +238,11 @@ let D = { roster: [], leaders: [], board: null, groups: ["격수","도사","도�
           settings: { 참여점수: 1, 오픈점수: 1 }, scores: [], totals: {}, usedKeys: [] };
 let tab = "s-board", rtab = "text";
 let parsed = [];      // [{name, group, detail, gwanmun, kind}]
-// 표 구조: 열 하나가 룹. heads = 맨 윗줄 격수(최대 8), members = 그 아래 도사들
-let cols = [];        // [{heads:[person], members:[person]}]
-const MAX_HEAD = 8;
+// 표 구조: 룹마다 격수 줄 / 도사 줄이 있고, 줄마다 칸(NC개)에 사람이 들어가요.
+// groups = [{name:"1룹", rows:[{type:"격수"|"도사", people:[p|null, ...NC]}]}]
+let groups = [];
+let NC = 8;                                   // 한 줄에 들어가는 사람 칸 수
+const GCOLORS = ["#2b4bd8", "#e0a420", "#2e9e4f", "#8a4fd6", "#d6564f", "#2f9fb8"];
 let poolMembers = [], openers = [];   // openers: [{name, group, detail, driver, merc}]
 let RE = [], LE = [];
 
@@ -288,8 +296,9 @@ function go(t) {
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => go(b.dataset.t));
 
 function onData() {
-  if (D.board && D.board.cols && !cols.length) {
-    cols = D.board.cols.map(c => ({ heads: (c.heads || []).map(m => ({ ...m })), members: (c.members || []).map(m => ({ ...m })) }));
+  if (D.board && D.board.groups && !groups.length) {
+    NC = Number(D.board.nc) || NC;
+    groups = D.board.groups.map(g => ({ name: g.name, rows: (g.rows || []).map(r => ({ type: r.type, people: (r.people || []).map(m => m ? { ...m } : null) })) }));
     poolMembers = (D.board.pool || []).map(m => ({ ...m }));
     openers = (D.board.openers || []).map(o => ({ ...o }));
     renderBoard(); renderDrv();
@@ -422,7 +431,7 @@ async function onImgChange(e) {
 
 function resetAll() {
   if (!confirm("붙여넣은 목록과 지금 배치를 전부 지울까요?\n(저장해 둔 명단·룹장·점수는 그대로예요)")) return;
-  parsed = []; boardRows = []; poolMembers = []; openers = []; picked = null; dragSrc = null;
+  parsed = []; groups = []; poolMembers = []; openers = []; picked = null; dragSrc = null;
   $("#pasteBox").value = ""; $("#ocrBox").value = ""; $("#expTitle").value = "";
   $("#imgIn").value = ""; $("#ocrStatus").textContent = "";
   $("#parsedInfo").innerHTML = ""; $("#addToRoster").classList.add("hide");
@@ -431,34 +440,90 @@ function resetAll() {
 }
 
 /* ---------- 자동 배치 ---------- */
+function blankRow(type) { return { type, people: new Array(NC).fill(null) }; }
+function newGroup(name) { return { name, rows: [blankRow("격수"), blankRow("도사")] }; }
+function fitRows() { groups.forEach(g => g.rows.forEach(r => {
+  if (r.people.length < NC) r.people = r.people.concat(new Array(NC - r.people.length).fill(null));
+  else if (r.people.length > NC) { r.people.slice(NC).forEach(p => { if (p) poolMembers.push(p); }); r.people = r.people.slice(0, NC); }
+})); }
+
+// 줄에 사람들을 왼쪽부터 채우고, 넘치면 같은 종류 줄을 더 만들어요.
+function fillInto(g, type, people) {
+  if (!people.length) return;
+  let idx = 0;
+  const useRow = () => {
+    let r = null;
+    for (let i = g.rows.length - 1; i >= 0; i--) if (g.rows[i].type === type) { r = g.rows[i]; break; }
+    if (!r || r.people.every(x => x)) { r = blankRow(type); insertRow(g, r); }
+    return r;
+  };
+  while (idx < people.length) {
+    const r = useRow();
+    for (let c = 0; c < NC && idx < people.length; c++) if (!r.people[c]) r.people[c] = people[idx++];
+  }
+}
+// 같은 종류 줄끼리 모여 있게 넣어요 (격수 줄 다음에 도사 줄)
+function insertRow(g, row) {
+  let last = -1;
+  g.rows.forEach((r, i) => { if (r.type === row.type) last = i; });
+  if (last < 0) g.rows.push(row); else g.rows.splice(last + 1, 0, row);
+}
+
 function autoArrange() {
   if (!parsed.length) return toast("먼저 목록 인식을 해 주세요", 1);
-  if (!D.leaders.length) return toast("룹장 목록을 먼저 등록해 주세요 (룹장 탭)", 1);
-  poolMembers = []; boardRows = [];
-  // 오픈한 캐릭도 룹표에는 들어가요 (누군가 운전하니까). 운전자는 아래 칸에서 지정해요.
+  const nRaw = prompt("룹을 몇 개로 나눌까요?", String(Math.max(1, groups.length || 3)));
+  if (nRaw === null) return;
+  const n = Math.max(1, Math.min(12, Number(nRaw) || 3));
+  poolMembers = []; groups = [];
   openers = parsed.filter(p => p.kind === "오픈").map(p => ({ name: p.name, group: p.group, detail: p.detail, driver: "", merc: false }));
-  const byZone = { "격수": [], "도사": [] };
+  const mk = p => ({ name: p.name, group: p.group, detail: p.detail, gwanmun: p.gwanmun, driver: "", opened: p.kind === "오픈" });
+  const gs = [], ds = [];
   parsed.forEach(p => {
-    const m = { name: p.name, group: p.group, detail: p.detail, gwanmun: p.gwanmun, driver: "", opened: p.kind === "오픈" };
-    if (p.group === "격수") byZone["격수"].push(m);
-    else if (p.group === "도사") byZone["도사"].push(m);
+    const m = mk(p);
+    if (p.group === "격수") gs.push(m);
+    else if (p.group === "도사") ds.push(m);
     else poolMembers.push(m);
   });
-  const leadersByZone = { "격수": D.leaders.filter(l => l.zone === "격수"), "도사": D.leaders.filter(l => l.zone === "도사") };
-  ["격수", "도사"].forEach(zone => {
-    leadersByZone[zone].forEach(l => boardRows.push({ leader: l.name, zone, members: [] }));
-    const rows = boardRows.filter(r => r.zone === zone);
-    if (!rows.length) { poolMembers = poolMembers.concat(byZone[zone]); return; }
-    const rest = [];
-    byZone[zone].forEach(p => {
-      const own = rows.find(r => r.leader === p.name);
-      if (own) own.members.push(p); else rest.push(p);
-    });
-    rest.sort((a, b) => (b.gwanmun ? 1 : 0) - (a.gwanmun ? 1 : 0));
-    rest.forEach((p, i) => rows[i % rows.length].members.push(p));
-  });
+  gs.sort((a, b) => (b.gwanmun ? 1 : 0) - (a.gwanmun ? 1 : 0));   // 공문 먼저 → 룹마다 흩어짐
+  for (let i = 0; i < n; i++) groups.push(newGroup((i + 1) + "룹"));
+  const split = (arr) => { const out = Array.from({ length: n }, () => []); arr.forEach((p, i) => out[i % n].push(p)); return out; };
+  const gg = split(gs), dd = split(ds);
+  groups.forEach((g, i) => { fillInto(g, "격수", gg[i]); fillInto(g, "도사", dd[i]); });
   renderBoard(); renderDrv();
-  toast("자동 배치했어요 — 필요하면 드래그로 조정하세요");
+  toast(`${n}개 룹으로 배치했어요 — 칸을 눌러 옮길 수 있어요`);
+}
+function addGroup() {
+  const nm = prompt("룹 이름", (groups.length + 1) + "룹");
+  if (nm === null) return;
+  groups.push(newGroup(nm.trim() || (groups.length + 1) + "룹"));
+  renderBoard();
+}
+function addRow(type) {
+  if (!groups.length) return toast("먼저 룹을 만들어 주세요", 1);
+  const nm = prompt(`어느 룹에 ${type} 줄을 넣을까요?\n(${groups.map(g => g.name).join(", ")})`, groups[groups.length - 1].name);
+  if (nm === null) return;
+  const g = groups.find(x => x.name === nm.trim()) || groups[groups.length - 1];
+  insertRow(g, blankRow(type));
+  renderBoard();
+}
+function delGroup(i) {
+  const g = groups[i]; if (!g) return;
+  const ppl = g.rows.flatMap(r => r.people.filter(Boolean));
+  if (ppl.length && !confirm(`${g.name}에 ${ppl.length}명이 있어요.\n대기 칸으로 옮기고 룹을 지울까요?`)) return;
+  poolMembers = poolMembers.concat(ppl);
+  groups.splice(i, 1); renderBoard();
+}
+function renameGroup(i) {
+  const nm = prompt("룹 이름", groups[i].name);
+  if (nm === null) return;
+  groups[i].name = nm.trim() || groups[i].name;
+  renderBoard();
+}
+function setCols() {
+  const v = prompt("한 줄에 몇 칸으로 할까요? (4~12)", String(NC));
+  if (v === null) return;
+  NC = Math.max(4, Math.min(12, Number(v) || 8));
+  fitRows(); renderBoard();
 }
 
 /* ---------- 운전자 지정 ---------- */
@@ -472,81 +537,152 @@ function renderDrv() {
       <label class="sub" style="display:flex;align-items:center;gap:4px"><input type="checkbox" ${o.merc ? "checked" : ""} onchange="openers[${i}].merc=this.checked" style="width:18px"> 용병</label>
     </div>`).join("");
 }
+function allPeople() { return groups.flatMap(g => g.rows.flatMap(r => r.people.filter(Boolean))).concat(poolMembers); }
 function setDriver(i, v) {
   openers[i].driver = v;
   const nm = openers[i].name;
-  boardRows.forEach(r => r.members.forEach(m => { if (m.name === nm) m.driver = v; }));
-  poolMembers.forEach(m => { if (m.name === nm) m.driver = v; });
+  allPeople().forEach(m => { if (m.name === nm) m.driver = v; });
   renderBoard();
 }
 
-/* ---------- 보드 렌더 ---------- */
-function personHTML(p, idx, zone) {
-  const cls = p.gwanmun ? "gwanmun" : (zone === "격수" ? "g1" : "g2");
-  const drv = p.driver ? `<span class="drv">운전 ${esc(p.driver)}</span>` : (p.opened ? `<span class="drv">운전?</span>` : "");
-  return `<div class="person ${cls}" draggable="true" data-idx="${idx}">${esc(p.name)}<span class="detail">${esc(p.detail || "")}</span>${drv}</div>`;
+/* ---------- 표 렌더 ---------- */
+// 보이는 형태: 캐릭명(직업)(운전자)  — 시트에서 쓰던 표기 그대로
+function cellHTML(p, gi, ri, ci) {
+  const sel = picked && picked.g === gi && picked.r === ri && picked.c === ci;
+  const par = [p.detail, p.driver].filter(Boolean).map(x => `(${esc(x)})`).join("");
+  return `<span class="cell ${p.gwanmun ? "gwanmun" : ""} ${sel ? "picked" : ""}" draggable="true">${esc(p.name)}<span class="detail">${par}</span></span>`;
 }
 function renderBoard() {
-  poolMembers = poolMembers.filter((p, i, a) => a.findIndex(x => x.name === p.name) === i);
-  $("#pool").classList.toggle("hide", boardRows.length === 0 && poolMembers.length === 0);
-  $("#poolSlots").innerHTML = poolMembers.length ? poolMembers.map((p, i) => personHTML(p, i, "pool")).join("")
-    : `<span class="sub">비어 있음 — 룹에서 뺄 사람을 여기로 옮기면 돼요</span>`;
-  const g = boardRows.filter(r => r.zone === "격수"), d = boardRows.filter(r => r.zone === "도사");
-  let h = "";
-  if (g.length) { h += `<div class="zone-h g">격수</div>`; g.forEach(r => h += leaderRowHTML(r, boardRows.indexOf(r))); }
-  if (d.length) { h += `<div class="zone-h d">도사</div>`; d.forEach(r => h += leaderRowHTML(r, boardRows.indexOf(r))); }
-  $("#board").innerHTML = h || `<div class="sub" style="padding:8px 4px">목록을 인식하고 자동 배치를 눌러주세요.</div>`;
+  poolMembers = poolMembers.filter((p, i, a) => p && a.findIndex(x => x.name === p.name) === i);
+  $("#pool").classList.toggle("hide", groups.length === 0 && poolMembers.length === 0);
+  $("#poolSlots").innerHTML = poolMembers.length
+    ? poolMembers.map((p, i) => `<div class="person ${p.gwanmun ? "gwanmun" : ""} ${picked && picked.g === "pool" && picked.c === i ? "picked" : ""}" draggable="true" data-i="${i}">${esc(p.name)}<span class="detail">${esc(p.detail || "")}</span></div>`).join("")
+    : `<span class="sub">비어 있음 — 표에서 뺄 사람을 여기로 옮기면 돼요</span>`;
+
+  if (!groups.length) {
+    $("#board").innerHTML = `<div class="sub" style="padding:8px 4px">목록을 인식하고 자동 배치를 눌러주세요.</div>`;
+    $("#colInfo").textContent = ""; bindDnd(); return;
+  }
+  fitRows();
+  let h = `<table class="rt">`;
+  groups.forEach((g, gi) => {
+    const col = GCOLORS[gi % GCOLORS.length];
+    g.rows.forEach((r, ri) => {
+      h += `<tr class="t${r.type}">`;
+      if (ri === 0) h += `<td class="gname" rowspan="${g.rows.length}" style="background:${col}" onclick="groupMenu(${gi})">${esc(g.name)}</td>`;
+      const sameAsPrev = ri > 0 && g.rows[ri - 1].type === r.type;
+      if (!sameAsPrev) {
+        let span = 1;
+        for (let k = ri + 1; k < g.rows.length && g.rows[k].type === r.type; k++) span++;
+        h += `<td class="rlabel" rowspan="${span}" onclick="rowMenu(${gi},${ri})">${r.type}</td>`;
+      }
+      for (let c = 0; c < NC; c++) {
+        const p = r.people[c];
+        h += `<td class="drop" data-g="${gi}" data-r="${ri}" data-c="${c}">${p ? cellHTML(p, gi, ri, c) : ""}</td>`;
+      }
+      h += `</tr>`;
+    });
+  });
+  h += `</table>`;
+  $("#board").innerHTML = h;
+  const tot = allPeople().length - poolMembers.length;
+  $("#colInfo").textContent = `룹 ${groups.length}개 · ${NC}칸 · 배치 ${tot}명` + (poolMembers.length ? ` · 대기 ${poolMembers.length}명` : "");
   bindDnd();
 }
-function leaderRowHTML(r, rowIdx) {
-  return `<div class="leader-row"><div class="leader-name">${esc(r.leader)} <span class="sub">(${r.members.length}명)</span></div>
-    <div class="slots" data-row="${rowIdx}">${r.members.map((p, i) => personHTML(p, i, r.zone)).join("")}</div></div>`;
+function groupMenu(gi) {
+  const a = prompt(`"${groups[gi].name}"\n1 = 이름 바꾸기\n2 = 룹 지우기\n(취소하려면 비우고 확인)`, "");
+  if (a === null) return;
+  if (a.trim() === "1") renameGroup(gi);
+  else if (a.trim() === "2") delGroup(gi);
 }
+function rowMenu(gi, ri) {
+  const g = groups[gi], r = g.rows[ri];
+  const n = r.people.filter(Boolean).length;
+  if (!confirm(`${g.name}의 "${r.type}" 줄을 지울까요?` + (n ? `\n${n}명은 대기 칸으로 가요.` : ""))) return;
+  poolMembers = poolMembers.concat(r.people.filter(Boolean));
+  g.rows.splice(ri, 1);
+  if (!g.rows.length) groups.splice(gi, 1);
+  renderBoard();
+}
+
+/* ---------- 옮기기 (드래그 + 탭) ---------- */
 let dragSrc = null, picked = null;
-function arrOf(row) { return row === "pool" ? poolMembers : boardRows[row].members; }
-function moveTo(src, dstRow) {
-  const srcArr = arrOf(src.row);
-  const person = srcArr.splice(src.idx, 1)[0];
-  if (!person) return;
-  arrOf(dstRow).push(person);
+function getAt(loc) { return loc.g === "pool" ? poolMembers[loc.c] : groups[loc.g].rows[loc.r].people[loc.c]; }
+function setAt(loc, p) {
+  if (loc.g === "pool") { if (p) poolMembers.push(p); return; }
+  groups[loc.g].rows[loc.r].people[loc.c] = p || null;
+}
+function moveTo(src, dst) {
+  if (src.g === dst.g && src.r === dst.r && src.c === dst.c) { picked = null; renderBoard(); return; }
+  const a = getAt(src), b = getAt(dst);
+  if (!a) { picked = null; renderBoard(); return; }
+  if (src.g === "pool") poolMembers.splice(src.c, 1); else setAt(src, null);
+  if (dst.g === "pool") { poolMembers.push(a); }
+  else {
+    setAt(dst, a);
+    if (b) { if (src.g === "pool") poolMembers.push(b); else setAt(src, b); }   // 자리가 차 있으면 서로 바꿔요
+  }
   picked = null; dragSrc = null;
   renderBoard();
 }
 function bindDnd() {
-  document.querySelectorAll(".person").forEach(el => {
-    const row = el.closest(".slots").dataset.row, idx = Number(el.dataset.idx);
-    if (picked && picked.row === row && picked.idx === idx) el.classList.add("picked");
-    el.addEventListener("dragstart", e => { dragSrc = { row, idx }; e.dataTransfer.effectAllowed = "move"; });
+  document.querySelectorAll("#board td.drop").forEach(td => {
+    const loc = { g: Number(td.dataset.g), r: Number(td.dataset.r), c: Number(td.dataset.c) };
+    const cell = td.querySelector(".cell");
+    if (cell) {
+      cell.addEventListener("dragstart", e => { dragSrc = loc; e.dataTransfer.effectAllowed = "move"; });
+      cell.addEventListener("click", e => {
+        e.stopPropagation();
+        picked = (picked && picked.g === loc.g && picked.r === loc.r && picked.c === loc.c) ? null : loc;
+        renderBoard();
+      });
+    }
+    td.addEventListener("dragover", e => { e.preventDefault(); td.classList.add("over"); });
+    td.addEventListener("dragleave", () => td.classList.remove("over"));
+    td.addEventListener("drop", e => { e.preventDefault(); td.classList.remove("over"); if (dragSrc) moveTo(dragSrc, loc); });
+    td.addEventListener("click", () => { if (picked) moveTo(picked, loc); });
+  });
+  document.querySelectorAll("#poolSlots .person").forEach(el => {
+    const loc = { g: "pool", r: 0, c: Number(el.dataset.i) };
+    el.addEventListener("dragstart", e => { dragSrc = loc; e.dataTransfer.effectAllowed = "move"; });
     el.addEventListener("click", e => {
       e.stopPropagation();
-      if (picked && picked.row === row && picked.idx === idx) { picked = null; renderBoard(); return; }
-      picked = { row, idx }; renderBoard();
+      picked = (picked && picked.g === "pool" && picked.c === loc.c) ? null : loc;
+      renderBoard();
     });
   });
-  document.querySelectorAll(".slots").forEach(el => {
-    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("over"); });
-    el.addEventListener("dragleave", () => el.classList.remove("over"));
-    el.addEventListener("drop", e => { e.preventDefault(); el.classList.remove("over"); if (dragSrc) moveTo(dragSrc, el.dataset.row); });
-    el.addEventListener("click", () => { if (picked) moveTo(picked, el.dataset.row); });
-  });
+  const ps = $("#poolSlots");
+  ps.addEventListener("dragover", e => { e.preventDefault(); ps.classList.add("over"); });
+  ps.addEventListener("dragleave", () => ps.classList.remove("over"));
+  ps.addEventListener("drop", e => { e.preventDefault(); ps.classList.remove("over"); if (dragSrc) moveTo(dragSrc, { g: "pool", r: 0, c: -1 }); });
+  ps.addEventListener("click", () => { if (picked) moveTo(picked, { g: "pool", r: 0, c: -1 }); });
   $("#pickHint").classList.toggle("hide", !picked);
 }
 
 function boardTitle() { return $("#expTitle").value.trim() || `${today()} 공성 룹표`; }
 async function saveBoard() {
-  if (!boardRows.length) return toast("배치된 내용이 없어요", 1);
-  const r = await write("board_save", { board: { title: boardTitle(), rows: boardRows, pool: poolMembers, openers, savedAt: today() } });
+  if (!groups.length) return toast("배치된 내용이 없어요", 1);
+  const r = await write("board_save", { board: { title: boardTitle(), groups, nc: NC, pool: poolMembers, openers, savedAt: today() } });
   if (r && r.ok) toast("룹표를 저장했어요");
 }
 
 async function exportPng() {
-  if (!boardRows.length) return toast("배치된 내용이 없어요", 1);
+  if (!groups.length) return toast("배치된 내용이 없어요", 1);
   try { if (!window.html2canvas) await loadScript("html2canvas.min.js"); }
   catch (e) { return toast("이미지 기능을 불러오지 못했어요", 1); }
   const wrap = document.createElement("div");
   const bg = getComputedStyle(document.body).backgroundColor, fg = getComputedStyle(document.body).color;
-  wrap.style.cssText = `position:fixed;left:-9999px;top:0;width:1200px;padding:20px;background:${bg}`;
-  wrap.innerHTML = `<div style="font-size:22px;font-weight:800;margin-bottom:12px;color:${fg}">${esc(boardTitle())}</div><div class="exp-board">${$("#board").innerHTML}</div>`;
+  wrap.style.cssText = `position:fixed;left:-9999px;top:0;padding:20px;background:${bg};display:inline-block`;
+  wrap.innerHTML = `<div style="font-size:22px;font-weight:800;margin-bottom:12px;color:${fg}">${esc(boardTitle())}</div>${$("#board").innerHTML}`;
+  wrap.querySelectorAll(".cell").forEach(c => c.classList.remove("picked"));
+  // 그림에서는 오른쪽 빈 칸을 잘라내요
+  const trs = [...wrap.querySelectorAll("table.rt tr")];
+  let lastUsed = -1;
+  trs.forEach(tr => {
+    const ds = [...tr.querySelectorAll("td.drop")];
+    ds.forEach((td, i) => { if (td.textContent.trim()) lastUsed = Math.max(lastUsed, i); });
+  });
+  if (lastUsed >= 0) trs.forEach(tr => [...tr.querySelectorAll("td.drop")].forEach((td, i) => { if (i > lastUsed) td.remove(); }));
   document.body.appendChild(wrap);
   try {
     const canvas = await html2canvas(wrap, { backgroundColor: bg, scale: 2 });
@@ -561,7 +697,7 @@ async function exportPng() {
 function buildAccrual() {
   const jp = Number(D.settings["참여점수"]) || 0, op = Number(D.settings["오픈점수"]) || 0;
   const rows = [], skipped = [];
-  const all = boardRows.flatMap(r => r.members);
+  const all = groups.flatMap(g => g.rows.flatMap(r => r.people.filter(Boolean)));
   all.forEach(m => {
     const o = openers.find(x => x.name === m.name);
     if (o) {
@@ -576,7 +712,7 @@ function buildAccrual() {
   return { rows, skipped };
 }
 async function accrue() {
-  if (!boardRows.length) return toast("배치된 내용이 없어요", 1);
+  if (!groups.length) return toast("배치된 내용이 없어요", 1);
   const { rows, skipped } = buildAccrual();
   if (!rows.length) return toast("적립할 내용이 없어요 (점수 설정을 확인해 주세요)", 1);
   const key = today() + "|" + boardTitle();
