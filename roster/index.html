@@ -1014,11 +1014,28 @@ function boardGrid() {
   let w = 0; g.forEach(r => { for (let i = r.length - 1; i >= 0; i--) if (String(r[i]).trim()) { w = Math.max(w, i + 1); break; } });
   return g.map(r => r.slice(0, Math.max(3, w)));
 }
+// 시트에 앱 화면처럼 그리기 위한 색·구조 정보
+function boardStyle() {
+  const show = p => p ? p.name + [p.detail, p.driver].filter(Boolean).map(x => `(${x})`).join("") + (p.merc ? `[용병${p.by ? "·" + p.by : ""}]` : "") : "";
+  const extra = [];
+  if (poolMembers.length) extra.push(["대기", "", ...poolMembers.map(show)]);
+  if (openers.length) extra.push(["오픈", "운전자", ...openers.map(o => `${o.name} → ${o.driver || "(미정)"}${o.merc ? " [용병]" : ""}`)]);
+  if (mercPool.length) extra.push(["용병", "운전대기", ...mercPool.map(m => m.name + (m.by ? `(${m.by})` : ""))]);
+  return {
+    cols: NC,
+    groups: groups.map((g, i) => ({
+      name: g.name, color: GCOLORS[i % GCOLORS.length],
+      rows: g.rows.map(r => ({ type: r.type, cells: r.people.map(p => ({ t: show(p), g: !!(p && p.gwanmun) })) }))
+    })),
+    extra
+  };
+}
+
 async function saveBoard(force) {
   if (!groups.length) return toast("배치된 내용이 없어요", 1);
   const r = await write("board_save", {
     board: { title: boardTitle(), groups, nc: NC, pool: poolMembers, openers, mercs: mercPool, savedAt: today() },
-    key: siegeKey(), grid: boardGrid(), base: revN("룹표"), force: !!force
+    key: siegeKey(), grid: boardGrid(), style: boardStyle(), base: revN("룹표"), force: !!force
   });
   if (r && !r.ok && r.error === "stale") {
     if (askOverwrite(r, "룹표")) return saveBoard(true);
