@@ -91,11 +91,28 @@ table.rt tr.t도사 td.drop{background:rgba(120,150,230,.07)}
   <!-- 배치 -->
   <section id="s-board" class="hide">
     <div class="card">
+      <h2 style="margin-top:0">공지방에 올릴 신청 받기</h2>
+      <div id="recBox"></div>
+      <div id="recForm">
+        <div class="row wrap" style="margin-top:8px">
+          <input class="grow" id="recTitle" placeholder="제목 (예: 금요일 수성 [백호 장훈])" style="min-width:200px">
+          <input id="recDate" type="date" style="width:170px">
+        </div>
+        <button class="pri big-btn" style="margin-top:10px" onclick="openRecruit()">모집 열기</button>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="rtab">
-        <button id="tText" class="on" onclick="setRTab('text')">텍스트 붙여넣기</button>
+        <button id="tSign" class="on" onclick="setRTab('sign')">신청에서 불러오기</button>
+        <button id="tText" onclick="setRTab('text')">텍스트 붙여넣기</button>
         <button id="tImg" onclick="setRTab('img')">스크린샷 업로드</button>
       </div>
-      <div id="rText">
+      <div id="rSign">
+        <div class="sub" id="signInfo">모집을 열고 문파원이 신청하면 여기로 들어와요.</div>
+        <button class="big-btn" style="margin-top:10px" onclick="loadSignups()">신청 불러오기</button>
+      </div>
+      <div id="rText" class="hide">
         <textarea id="pasteBox" placeholder="카톡 투표 결과를 그대로 붙여넣으세요.&#10;&#10;참여 : 34명&#10;갓돼/검제&#10;화무결/진인&#10;&#10;미참여(오픈가능) : 11명&#10;소망/도사&#10;쉼/도인"></textarea>
       </div>
       <div id="rImg" class="hide">
@@ -235,8 +252,9 @@ const DEFAULT_API = "https://script.google.com/macros/s/AKfycbw0M5R3wzrOh6fgey3l
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1ql68dJWN7M_9E3aF1DROmmVTUE-CXuyY6Kf2NYJlI-M/edit";
 let API = localStorage.getItem("api") || DEFAULT_API;
 let D = { roster: [], leaders: [], board: null, groups: ["격수","도사","도적","주술사"], kinds: ["참여","오픈","차감","기타"],
-          settings: { 참여점수: 1, 오픈점수: 1 }, scores: [], totals: {}, usedKeys: [] };
-let tab = "s-board", rtab = "text";
+          settings: { 참여점수: 1, 오픈점수: 1 }, scores: [], totals: {}, usedKeys: [],
+          recruit: null, signups: [], recruits: [] };
+let tab = "s-board", rtab = "sign";
 let parsed = [];      // [{name, group, detail, gwanmun, kind}]
 // 표 구조: 룹마다 격수 줄 / 도사 줄이 있고, 줄마다 칸(NC개)에 사람이 들어가요.
 // groups = [{name:"1룹", rows:[{type:"격수"|"도사", people:[p|null, ...NC]}]}]
@@ -303,6 +321,7 @@ function onData() {
     openers = (D.board.openers || []).map(o => ({ ...o }));
     renderBoard(); renderDrv();
   }
+  renderRecruit();
   if (tab === "s-roster") drawRosterTbl();
   if (tab === "s-leader") drawLeaderTbl();
   if (tab === "s-score") renderScoreTab();
@@ -325,10 +344,10 @@ function findRoster(name) { return D.roster.find(p => p.name === name); }
 /* ---------- 붙여넣기 / OCR 파싱 ---------- */
 function setRTab(t) {
   rtab = t;
-  $("#tText").classList.toggle("on", t === "text");
-  $("#tImg").classList.toggle("on", t === "img");
-  $("#rText").classList.toggle("hide", t !== "text");
-  $("#rImg").classList.toggle("hide", t !== "img");
+  ["sign", "text", "img"].forEach(k => {
+    $("#t" + { sign: "Sign", text: "Text", img: "Img" }[k]).classList.toggle("on", t === k);
+    $("#r" + { sign: "Sign", text: "Text", img: "Img" }[k]).classList.toggle("hide", t !== k);
+  });
 }
 // 카톡 화면에서 같이 읽히는 UI 글자들 — 사람 이름이 아니니 버려요.
 const CHROME_RE = /^(투표\s*현황|항목별|멤버별|미참여.*|참여.*|메시지\s*입력|오픈\s*(불)?가능.*)$|^\d{1,2}\s*[::]\s*\d{2}|^\d+명$|^[^가-힣A-Za-z0-9]*$/;
@@ -385,6 +404,78 @@ function parseLine(line) {
   const existing = findRoster(name);
   if (existing) return { name, group: existing.group || group, detail: existing.detail || detail, gwanmun: !!existing.gwanmun };
   return { name, group, detail, gwanmun: false };
+}
+
+/* ---------- 모집 / 신청 ---------- */
+const VOTE_URL = location.href.replace(/[^/]*$/, "") + "vote/";
+function renderRecruit() {
+  const r = D.recruit;
+  $("#recForm").classList.toggle("hide", !!(r && r.open));
+  if (!r) {
+    $("#recBox").innerHTML = `<div class="sub">아직 모집이 안 열렸어요. 제목과 날짜를 넣고 열면 공지방에 올릴 링크가 나와요.</div>`;
+    if (!$("#recDate").value) $("#recDate").value = today();
+    $("#signInfo").textContent = "모집을 열고 문파원이 신청하면 여기로 들어와요.";
+    return;
+  }
+  const s = D.signups || [];
+  const j = s.filter(x => x.status === "참여").length, o = s.filter(x => x.status === "오픈").length, n = s.filter(x => x.status === "불참").length;
+  const badge = r.open
+    ? `<span class="tag" style="background:var(--ok);color:#fff">모집 중</span>`
+    : `<span class="tag">모집 닫힘</span>`;
+  $("#recBox").innerHTML = `
+    <div><b>${esc(r.title)}</b> <span class="sub">${esc(r.date)}</span> ${badge}</div>
+    <div class="sub" style="margin:6px 0 10px">참여 ${j} · 오픈 ${o} · 불참 ${n}</div>` +
+    (r.open
+      ? `<input readonly value="${esc(VOTE_URL)}" onclick="this.select()">
+         <div class="row wrap" style="margin-top:8px">
+           <button class="pri grow" onclick="copyVote()">링크 복사</button>
+           <button class="grow" onclick="load().then(()=>toast('새로고침했어요'))">신청 새로고침</button>
+           <button class="sm ghost" onclick="closeRecruit()">모집 닫기</button>
+         </div>`
+      : `<div class="row wrap">
+           <button class="grow" onclick="reopenRecruit()">다시 열기</button>
+           <button class="grow" onclick="$('#recForm').classList.remove('hide');$('#recTitle').focus()">새 모집 만들기</button>
+         </div>
+         <div class="sub" style="margin-top:6px">닫혀 있어도 들어온 신청은 아래에서 불러올 수 있어요.</div>`);
+  $("#signInfo").innerHTML = `<b>${esc(r.title)}</b> — 참여 ${j}명 · 오픈 ${o}명 · 불참 ${n}명` + (r.open ? "" : ` <span class="sub">(모집 닫힘)</span>`);
+}
+async function copyVote() {
+  try { await navigator.clipboard.writeText(VOTE_URL); toast("링크를 복사했어요 — 공지방에 붙여넣으세요"); }
+  catch (e) { toast("복사가 안 돼요. 주소 칸을 눌러 직접 복사해 주세요", 1); }
+}
+async function openRecruit() {
+  const title = $("#recTitle").value.trim(), date = $("#recDate").value || today();
+  if (!title) return toast("제목을 적어 주세요", 1);
+  const r = await write("recruit_open", { key: date + "|" + title, title, date });
+  if (r && r.ok) { $("#expTitle").value = title; toast("모집을 열었어요 — 링크를 공지방에 올리세요"); }
+}
+async function reopenRecruit() {
+  const r = D.recruit; if (!r) return;
+  const x = await write("recruit_open", { key: r.key, title: r.title, date: r.date });
+  if (x && x.ok) toast("다시 열었어요");
+}
+async function closeRecruit() {
+  if (!confirm("모집을 닫을까요?\n(이미 들어온 신청은 그대로 남아요)")) return;
+  const r = await write("recruit_close", {});
+  if (r && r.ok) toast("모집을 닫았어요");
+}
+// 신청 → 배치용 목록
+function loadSignups() {
+  const s = (D.signups || []).filter(x => x.status === "참여" || x.status === "오픈");
+  if (!s.length) return toast("아직 들어온 신청이 없어요", 1);
+  const seen = {};
+  parsed = s.filter(x => (seen[x.name] ? false : (seen[x.name] = true))).map(x => {
+    const ex = findRoster(x.name);
+    return { name: x.name, group: x.group || (ex ? ex.group : ""), detail: x.detail || (ex ? ex.detail : ""),
+             gwanmun: ex ? !!ex.gwanmun : false, kind: x.status === "오픈" ? "오픈" : "참여" };
+  });
+  const bad = parsed.filter(p => !p.group).map(p => p.name);
+  const joinN = parsed.filter(p => p.kind === "참여").length, openN = parsed.filter(p => p.kind === "오픈").length;
+  $("#parsedInfo").innerHTML = `참여 ${joinN}명 · 오픈 ${openN}명` +
+    (bad.length ? `<br><span class="bad">직업을 모르는 ${bad.length}명은 대기 칸으로 가요: ${bad.slice(0, 10).map(esc).join(", ")}</span>` : "");
+  $("#addToRoster").classList.add("hide");
+  if (D.recruit && !$("#expTitle").value.trim()) $("#expTitle").value = D.recruit.title;
+  toast(`${parsed.length}명 불러왔어요 — 자동 배치를 눌러주세요`);
 }
 
 function parsePaste() {
